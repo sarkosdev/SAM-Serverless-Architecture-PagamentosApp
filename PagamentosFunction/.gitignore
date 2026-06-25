@@ -1,0 +1,15 @@
+.aws-sam/
+**/target/
+*.class
+*.jar
+*.war
+
+.idea/
+.vscode/
+*.iml
+
+env.json
+.env
+.DS_Store
+
+samconfig.toml

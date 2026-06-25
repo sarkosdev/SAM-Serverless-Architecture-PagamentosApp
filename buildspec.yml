@@ -1,0 +1,32 @@
+# CodePipeline Configuration File
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: eu-west-1
+    SAM_ARTIFACT_BUCKET: sam-artifacts-pagamentos-nuno-20260624
+    SAM_S3_PREFIX: serverless-api-pagamentos-dev
+
+phases:
+  install:
+    commands:
+      - echo "Checking Java, Maven and SAM versions..."
+      - java -version
+      - mvn -version
+      - sam --version
+
+  pre_build:
+    commands:
+      - echo "Validating SAM template..."
+      - sam validate --template-file template.yaml --region $AWS_REGION
+
+  build:
+    commands:
+      - echo "Building SAM application..."
+      - sam build --clean
+      - echo "Packaging SAM application..."
+      - sam package --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --output-template-file packaged-template.yaml
+
+artifacts:
+  files:
+    - packaged-template.yaml

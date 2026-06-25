@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless Pagamentos API with API Gateway, Lambda and DynamoDB
+Globals:
+  Function:
+    Runtime: java25
+    Timeout: 10
+    MemorySize: 512
+    Architectures:
+    - x86_64
+Resources:
+  PagamentosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: ${AWS::StackName}-pagamentos
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: id
+        AttributeType: S
+      KeySchema:
+      - AttributeName: id
+        KeyType: HASH
+  PagamentosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PagamentosFunction
+      Handler: pagamentos.PagamentosHandler::handleRequest
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: PagamentosTable
+          DYNAMODB_ENDPOINT: ''
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: PagamentosTable
+      Events:
+        PagamentosApi:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos
+            Method: ANY
+        PagamentosApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos/{proxy+}
+            Method: ANY
+    Metadata:
+      SamResourceId: PagamentosFunction
+Outputs:
+  PagamentosApiUrl:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos
