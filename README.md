@@ -28,11 +28,17 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
     - Sign in to AWS Console
     - Make sure Region is selected as the correct one (example: eu-west-1)
     - Move to 'CodePipeline' and press 'Create new Pipeline'
-        - Source Provider: Github (via Github App)
-        - Connection: Connect to Github, define connection name and access your github account and repository
-        - Output artifact format: CodePipeline default
-        - Next
-        - Leave the rest as default and Create Pipeline
+        - Choose 'Build Custom Pipeline'
+        - Name: api-pagamentos-pipeline
+        - Execution Mode: Queued
+        - Source Stage:
+            - Source Provider: Github (via Github App)
+            - Connection: Connect to Github, define connection name and access your github account and repository
+            - Output artifact format: CodePipeline default
+            - Next
+        - Build stage:
+            - Other Build Porviders: AWS CodeBuild
+            - 
     - 
 
 
