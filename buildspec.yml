@@ -4,6 +4,7 @@ version: 0.2
 env:
   variables:
     AWS_REGION: eu-west-1
+    STACK_NAME: serverless-api-pagamentos-dev
     SAM_ARTIFACT_BUCKET: sam-artifacts-pagamentos-nuno-20260624
     SAM_S3_PREFIX: serverless-api-pagamentos-dev
 
@@ -23,7 +24,8 @@ phases:
   build:
     commands:
       - echo "Building SAM application..."
-      - sam build --clean
+      - rm -rf .aws-sam
+      - sam build
       - echo "Packaging SAM application..."
       - sam package --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --output-template-file packaged-template.yaml
 
