@@ -18,7 +18,7 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
 6. Install and configure AWS SAM
 7. Install docker desktop (emolutes cloud testing locally)
 
-### 3. Implementation
+### 3. Implementation - Locally
 
 1. Create a github repository;
 
@@ -69,7 +69,14 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
 7. Check if table was created sucessfully, if you see the 'PagementosTable' on the list, then everything went smooth
     - `aws dynamodb list-tables --endpoint-url http://localhost:8000 --region eu-west-1`
 
-8. Make the changes needed when it comes to your java class and your .yaml file. After changing the java code, allways compile the code again
+8. Create LambdaFunctions According to our 'Pagamentos' API scenario. Java Code structer used for our architecture. We will use four Lambda Functions instead, to split reponsabilities between them
+    - ReadPagamentoFunction
+    - CreatePagamentoFunction
+    - PagarPagamentoFunction
+    - DeletePagamentoFunction
+
+
+8. Make the changes needed when it comes to your java class and your .yaml file. After changing the java code, allways compile the code again, run the following command inside the Lambda Function root folder 
     - `mvn clean package -DskipTests -e`
 
 9. Test your application locally. The second command launches a local api ready to be tested. Everytime you change template.yaml file you need to rebuild it
@@ -82,27 +89,36 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
 11. Verify how many items there is on table
     - `aws dynamodb scan --table-name PagamentosTable --select COUNT --endpoint-url http://localhost:8000 --region eu-west-1`
 
-12. Cleaner output where we only retrieve the 'Items' from the table
+12. Cleaner output where we only retrieve the 'Items' straight from the table
     - `aws dynamodb scan --table-name PagamentosTable --endpoint-url http://localhost:8000 --region eu-west-1 --query "Items"`
 
-13. Create an entry inside our local DynamoDB Table for testing porpouses
-    - `curl.exe -i -X POST "http://127.0.0.1:3000/pagamentos" -H "Content-Type: application/json" -d { "processNum": "7651928/2026", "processValue": "25.50" }`
-
-14. If you using a powershell cli use this commands instead. First command we create the body, and the second we send the body using a POST method throw our API url
-    - `$body = @{ processNum = "PROC-CLOUD-001"; processValue = "25.50" } | ConvertTo-Json`
+13. If you using a powershell cli use this commands instead, in order to add an entry to our DynamoDB table. First command we create the body, and the second we send the body using a POST method throw our API url
+    - `$body = @{ processNum = "PROC-CLOUD-101"; processValue = "25.50" } | ConvertTo-Json`
     - `Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:3000/pagamentos" -ContentType "application/json" -Body $body`
 
-15. Check the list of 'Pagamentos' in our DynamoDB table
+15. Check the list of 'Pagamentos' calling GET '/pagamentos' that lists every item in the table
     - `curl.exe -i http://127.0.0.1:3000/pagamentos`
+
+16. Instead we can use the Powershell aproach where we use the similar CLI command that we used to create the entry in the table
+    - `Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:3000/pagamentos"`
 
 16. Access the list according to status, either PENDING or PAGO, returning all values from our DynamoDB table (using PowerShell). Use one of either endpoint for both scenarios
     - `Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:3000/pagamentos/status/PENDING"`
     - `Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:3000/pagamentos/status/PAGO"`
 
 17. Process functionality in order to process the payment according to the list of process numbers passed
-    - `$body = @{listaProcess = "PROC-001", "PROC-002"} | ConvertTo-Json`
+    - `$body = @{listaProcess = @("PROC-PIPELINE-001", "test-1")} | ConvertTo-Json`
     - `Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:3000/pagamentos/pagar" -ContentType "application/json" -Body $body`
 
 18. If you ever need to delete one record from our DynamoDB 'Pagamentos' table. Chande 'PROC-001' for your process number
     - `Invoke-RestMethod -Method DELETE -Uri "http://127.0.0.1:3000/pagamentos/process/PROC-001"`
 
+
+
+
+
+
+## TIPS
+
+1. Remove local docker container that emulates our cloud run
+    - `docker rm -f dynamodb-local`

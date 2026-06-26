@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Pagamentos API with API Gateway, Lambda and DynamoDB
 
-
 Globals:
   Function:
     Runtime: java25
@@ -10,6 +9,9 @@ Globals:
     MemorySize: 512
     Architectures:
       - x86_64
+    Environment:
+      Variables:
+        DYNAMODB_ENDPOINT: ""
 
 Resources:
   PagamentosTable:
@@ -23,30 +25,94 @@ Resources:
       KeySchema:
         - AttributeName: id
           KeyType: HASH
-        
-  PagamentosFunction:
+
+  ReadPagamentosFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: PagamentosFunction
-      Handler: pagamentos.PagamentosHandler::handleRequest
+      Handler: pagamentos.handler.ReadPagamentosHandler::handleRequest
       Environment:
         Variables:
           TABLE_NAME: !Ref PagamentosTable
-          DYNAMODB_ENDPOINT: ""
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PagamentosTable
+      Events:
+        ListPagamentos:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos
+            Method: GET
+        GetPagamento:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos/{id}
+            Method: GET
+        ListPagamentosByStatus:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos/status/{status}
+            Method: GET
+
+  CreatePagamentoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PagamentosFunction
+      Handler: pagamentos.handler.CreatePagamentoHandler::handleRequest
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PagamentosTable
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref PagamentosTable
+      Events:
+        CreatePagamento:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos
+            Method: POST
+
+  PagarPagamentosFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PagamentosFunction
+      Handler: pagamentos.handler.PagarPagamentoHandler::handleRequest
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PagamentosTable
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PagamentosTable
       Events:
-        PagamentosApi:
+        PagarPagamentos:
           Type: HttpApi
           Properties:
-            Path: /pagamentos
-            Method: ANY
-        PagamentosApiProxy:
+            Path: /pagamentos/pagar
+            Method: POST
+
+  DeletePagamentoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PagamentosFunction
+      Handler: pagamentos.handler.DeletePagamentoHandler::handleRequest
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PagamentosTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PagamentosTable
+      Events:
+        DeletePagamentoById:
           Type: HttpApi
           Properties:
-            Path: /pagamentos/{proxy+}
-            Method: ANY
+            Path: /pagamentos/{id}
+            Method: DELETE
+        DeletePagamentoByProcessNum:
+          Type: HttpApi
+          Properties:
+            Path: /pagamentos/process/{processNum}
+            Method: DELETE
+
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL
