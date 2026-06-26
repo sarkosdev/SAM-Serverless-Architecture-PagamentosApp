@@ -7,6 +7,8 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
 ### 1. Description
 
 'PagamentosApp' is a payment receipts application, that calculates the value of each invoice.
+This is the backend serverless architecture solution for this application, using api gateway, four lambdas functions and dynamoDB table.
+
 
 ### 2. Pre-Requirements
 
@@ -113,7 +115,14 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
 18. If you ever need to delete one record from our DynamoDB 'Pagamentos' table. Chande 'PROC-001' for your process number
     - `Invoke-RestMethod -Method DELETE -Uri "http://127.0.0.1:3000/pagamentos/process/PROC-001"`
 
+19. After the application is fully deployed on AWS Cloud, navigate to CodeBuild, Build projects and select the build that just runned and checked the URL that was generated in order to perform the communication with the api. Next it follows a pratical example of a request on how to create a 'Pagamento' inside our DynamoDB table using the api we just deployed
+    - `$api = https://0b6hq996lk.execute-api.eu-west-1.amazonaws.com/pagamentos`
+    - `$body = @{ processNum = "PROC-CLOUD-101"; processValue = "25.50" } | ConvertTo-Json`
+    - `Invoke-RestMethod -Method POST -Uri $api -ContentType "application/json" -Body $body`
 
+20. Check the entry we just added to the DynamoDB table one of the two requests
+    - `Invoke-RestMethod -Method GET -Uri $api`
+    - `Invoke-RestMethod -Method GET -Uri $api/status/PENDING`
 
 
 
