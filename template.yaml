@@ -14,6 +14,7 @@ Globals:
         DYNAMODB_ENDPOINT: ""
 
 Resources:
+  # AWS DyanmoDB Table (Pagamento Table)
   PagamentosTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -26,6 +27,7 @@ Resources:
         - AttributeName: id
           KeyType: HASH
 
+  # AWS Lambda (ReadPagamento Function)
   ReadPagamentosFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -41,19 +43,23 @@ Resources:
         ListPagamentos:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos
             Method: GET
         GetPagamento:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos/{id}
             Method: GET
         ListPagamentosByStatus:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos/status/{status}
             Method: GET
 
+  # AWS Lambda (CreatePagamento Function)
   CreatePagamentoFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -69,9 +75,11 @@ Resources:
         CreatePagamento:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos
             Method: POST
 
+  # AWS Lambda (PagarPagamento Function)
   PagarPagamentosFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -87,9 +95,11 @@ Resources:
         PagarPagamentos:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos/pagar
             Method: POST
 
+  # AWS Lambda (DeletePagamento Function)
   DeletePagamentoFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -105,13 +115,32 @@ Resources:
         DeletePagamentoById:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos/{id}
             Method: DELETE
         DeletePagamentoByProcessNum:
           Type: HttpApi
           Properties:
+            ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
+
+  # AWS Amplify (Frontend - Angular)
+  ServerlessHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - http://localhost:4200
+          - http://127.0.0.1:4200
+        AllowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
 
 Outputs:
   PagamentosApiUrl:

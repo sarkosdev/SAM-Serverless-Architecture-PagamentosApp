@@ -41,16 +41,22 @@ Resources:
         ListPagamentos:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos
             Method: GET
         GetPagamento:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos/{id}
             Method: GET
         ListPagamentosByStatus:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos/status/{status}
             Method: GET
     Metadata:
@@ -72,6 +78,8 @@ Resources:
         CreatePagamento:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos
             Method: POST
     Metadata:
@@ -93,6 +101,8 @@ Resources:
         PagarPagamentos:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos/pagar
             Method: POST
     Metadata:
@@ -114,15 +124,34 @@ Resources:
         DeletePagamentoById:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos/{id}
             Method: DELETE
         DeletePagamentoByProcessNum:
           Type: HttpApi
           Properties:
+            ApiId:
+              Ref: ServerlessHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
     Metadata:
       SamResourceId: DeletePagamentoFunction
+  ServerlessHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+        - http://localhost:4200
+        - http://127.0.0.1:4200
+        AllowMethods:
+        - GET
+        - POST
+        - DELETE
+        - OPTIONS
+        AllowHeaders:
+        - Content-Type
+        - Authorization
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL

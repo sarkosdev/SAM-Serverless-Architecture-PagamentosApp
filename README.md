@@ -8,7 +8,7 @@ Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS
 
 'PagamentosApp' is a payment receipts application, that calculates the value of each invoice.
 This is the backend serverless architecture solution for this application, using api gateway, four lambdas functions and dynamoDB table.
-
+This solution will also be integrated with a frontend using AWS Amplify aswell as Cognito for Authentication and Authorization.
 
 ### 2. Pre-Requirements
 
