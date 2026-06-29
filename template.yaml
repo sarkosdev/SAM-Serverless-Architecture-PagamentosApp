@@ -14,7 +14,7 @@ Globals:
         DYNAMODB_ENDPOINT: ""
 
 Resources:
-  # AWS Amplify (Frontend - Angular)
+  # AWS ApiGateway HTTP API
   ServerlessHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
