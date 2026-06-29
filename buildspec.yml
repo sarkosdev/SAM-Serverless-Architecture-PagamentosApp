@@ -6,7 +6,7 @@ env:
     STACK_NAME: serverless-api-pagamentos-dev
     SAM_ARTIFACT_BUCKET: sam-artifacts-pagamentos-nuno-20260624
     SAM_S3_PREFIX: serverless-api-pagamentos-dev
-    ALLOWED_ORIGIN: http://localhost:4200
+    ALLOWED_ORIGIN: "http://localhost:4200,https://main.d50pf2izj2qvp.amplifyapp.com"
     SAM_CLI_TELEMETRY: 0
 
 phases:

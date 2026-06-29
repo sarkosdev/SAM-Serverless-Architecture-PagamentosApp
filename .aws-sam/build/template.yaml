@@ -17,7 +17,7 @@ Globals:
       Variables:
         DYNAMODB_ENDPOINT: ''
 Resources:
-  ServerlessHttpApi:
+  PagamentosHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       DefinitionBody:
@@ -26,21 +26,21 @@ Resources:
           title:
             Fn::Sub: ${AWS::StackName}-pagamentos-api
           version: '1.0'
-        x-amazon-apigateway-cors:
-          allowOrigins:
-          - Ref: AllowedOrigin
-          - http://127.0.0.1:4200
-          allowMethods:
-          - GET
-          - POST
-          - DELETE
-          - OPTIONS
-          allowHeaders:
-          - Content-Type
-          - Authorization
-          allowCredentials: false
-          maxAge: 300
         paths: {}
+      CorsConfiguration:
+        AllowOrigins:
+        - Ref: AllowedOrigin
+        - http://127.0.0.1:4200
+        AllowMethods:
+        - GET
+        - POST
+        - DELETE
+        - OPTIONS
+        AllowHeaders:
+        - Content-Type
+        - Authorization
+        AllowCredentials: false
+        MaxAge: 300
   PagamentosTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -71,21 +71,21 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos
             Method: GET
         GetPagamento:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos/{id}
             Method: GET
         ListPagamentosByStatus:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos/status/{status}
             Method: GET
     Metadata:
@@ -108,7 +108,7 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos
             Method: POST
     Metadata:
@@ -131,7 +131,7 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos/pagar
             Method: POST
     Metadata:
@@ -154,14 +154,14 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos/{id}
             Method: DELETE
         DeletePagamentoByProcessNum:
           Type: HttpApi
           Properties:
             ApiId:
-              Ref: ServerlessHttpApi
+              Ref: PagamentosHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
     Metadata:
@@ -170,4 +170,4 @@ Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL
     Value:
-      Fn::Sub: https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos
+      Fn::Sub: https://${PagamentosHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos

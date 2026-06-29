@@ -145,3 +145,6 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
 4. Validar your SAM configuration
     - `sam validate --template-file template.yaml --region eu-west-1`
+
+5. If we are having issues connection to our backend, check the CORS configuration 
+
