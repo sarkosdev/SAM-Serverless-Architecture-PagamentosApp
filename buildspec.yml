@@ -1,4 +1,3 @@
-# CodePipeline Configuration File
 version: 0.2
 
 env:
@@ -7,14 +6,13 @@ env:
     STACK_NAME: serverless-api-pagamentos-dev
     SAM_ARTIFACT_BUCKET: sam-artifacts-pagamentos-nuno-20260624
     SAM_S3_PREFIX: serverless-api-pagamentos-dev
-    SAM_CLI_TELEMETRY: 0
     ALLOWED_ORIGIN: http://localhost:4200
+    SAM_CLI_TELEMETRY: 0
 
 phases:
   install:
     commands:
-      - echo "BUILD_SPEC_VERSION=deploy-sam-v3"
-      - echo "Checking Java, Maven and SAM versions..."
+      - echo "BUILD_SPEC_VERSION=deploy-sam-cors-v1"
       - java -version
       - mvn -version
       - sam --version
@@ -23,26 +21,25 @@ phases:
     commands:
       - echo "Current directory:"
       - pwd
-      - echo "Files in source:"
+      - echo "Source files:"
       - ls -la
-      - echo "Validating SAM template..."
+      - echo "Checking CORS in source template.yaml:"
+      - grep -n "x-amazon-apigateway-cors\|allowOrigins\|AllowedOrigin\|ServerlessHttpApi" template.yaml || true
       - sam validate --template-file template.yaml --region $AWS_REGION
 
   build:
     commands:
-      - echo "Cleaning previous SAM build folder..."
+      - echo "Running clean SAM build..."
       - rm -rf .aws-sam
-      - echo "Building SAM application..."
       - sam build
-      - echo "Deploying SAM application..."
-      - sam deploy --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN
+      - echo "Checking CORS in built SAM template:"
+      - grep -n "x-amazon-apigateway-cors\|allowOrigins\|AllowedOrigin\|ServerlessHttpApi" .aws-sam/build/template.yaml || true
+      - echo "Deploying SAM stack..."
+      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN
+
   post_build:
     commands:
-      - echo "Stack status:"
+      - echo "CloudFormation stack status:"
       - aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --query "Stacks[0].StackStatus"
-      - echo "Stack outputs:"
+      - echo "CloudFormation outputs:"
       - aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --query "Stacks[0].Outputs"
-
-artifacts:
-  files:
-    - packaged-template.yaml
