@@ -21,7 +21,7 @@ Globals:
 
 Resources:
   # AWS ApiGateway HTTP API
-  ServerlessHttpApi:
+  PagamentosHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
       DefinitionBody:
@@ -29,21 +29,21 @@ Resources:
         info:
           title: !Sub '${AWS::StackName}-pagamentos-api'
           version: '1.0'
-        x-amazon-apigateway-cors:
-          allowOrigins:
-            - !Ref AllowedOrigin
-            - http://127.0.0.1:4200
-          allowMethods:
-            - GET
-            - POST
-            - DELETE
-            - OPTIONS
-          allowHeaders:
-            - Content-Type
-            - Authorization
-          allowCredentials: false
-          maxAge: 300
         paths: {}
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+          - http://127.0.0.1:4200
+        AllowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowCredentials: false
+        MaxAge: 300
 
   # AWS DyanmoDB Table (Pagamento Table)
   PagamentosTable:
@@ -74,19 +74,19 @@ Resources:
         ListPagamentos:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos
             Method: GET
         GetPagamento:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/{id}
             Method: GET
         ListPagamentosByStatus:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/status/{status}
             Method: GET
 
@@ -106,7 +106,7 @@ Resources:
         CreatePagamento:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos
             Method: POST
 
@@ -126,7 +126,7 @@ Resources:
         PagarPagamentos:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/pagar
             Method: POST
 
@@ -146,17 +146,17 @@ Resources:
         DeletePagamentoById:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/{id}
             Method: DELETE
         DeletePagamentoByProcessNum:
           Type: HttpApi
           Properties:
-            ApiId: !Ref ServerlessHttpApi
+            ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
 
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos"
+    Value: !Sub "https://${PagamentosHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos"
