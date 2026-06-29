@@ -26,22 +26,21 @@ Resources:
           title:
             Fn::Sub: ${AWS::StackName}-pagamentos-api
           version: '1.0'
+        x-amazon-apigateway-cors:
+          allowOrigins:
+          - Ref: AllowedOrigin
+          - http://127.0.0.1:4200
+          allowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+          allowHeaders:
+          - Content-Type
+          - Authorization
+          allowCredentials: false
+          maxAge: 300
         paths: {}
-      CorsConfiguration:
-        AllowOrigins:
-        - http://localhost:4200
-        - http://127.0.0.1:4200
-        - Ref: AllowedOrigin
-        AllowMethods:
-        - GET
-        - POST
-        - DELETE
-        - OPTIONS
-        AllowHeaders:
-        - Content-Type
-        - Authorization
-        AllowCredentials: false
-        MaxAge: 300
   PagamentosTable:
     Type: AWS::DynamoDB::Table
     Properties:
