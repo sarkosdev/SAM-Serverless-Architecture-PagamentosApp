@@ -17,17 +17,16 @@ public class ApiResponse {
             return APIGatewayV2HTTPResponse.builder()
                     .withStatusCode(statusCode)
                     .withHeaders(Map.of(
-                            "Content-Type", "application/json",
-                            "Access-Control-Allow-Origin", "*",
-                            "Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS",
-                            "Access-Control-Allow-Headers", "Content-Type,Authorization"
+                            "Content-Type", "application/json"
                     ))
                     .withBody(objectMapper.writeValueAsString(body))
                     .build();
         } catch (Exception e) {
             return APIGatewayV2HTTPResponse.builder()
                     .withStatusCode(500)
-                    .withHeaders(Map.of("Content-Type", "application/json"))
+                    .withHeaders(Map.of(
+                            "Content-Type", "application/json"
+                    ))
                     .withBody("{\"error\":\"Failed to serialize response\"}")
                     .build();
         }

@@ -1,17 +1,47 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Pagamentos API with API Gateway, Lambda and DynamoDB
+Parameters:
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:4200
+    Description: Frontend origin allowed to call the API through CORS
 Globals:
   Function:
     Runtime: java25
     Timeout: 10
-    MemorySize: 512
+    MemorySize: 1024
     Architectures:
     - x86_64
     Environment:
       Variables:
         DYNAMODB_ENDPOINT: ''
 Resources:
+  ServerlessHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title:
+            Fn::Sub: ${AWS::StackName}-pagamentos-api
+          version: '1.0'
+        paths: {}
+      CorsConfiguration:
+        AllowOrigins:
+        - http://localhost:4200
+        - http://127.0.0.1:4200
+        - Ref: AllowedOrigin
+        AllowMethods:
+        - GET
+        - POST
+        - DELETE
+        - OPTIONS
+        AllowHeaders:
+        - Content-Type
+        - Authorization
+        AllowCredentials: false
+        MaxAge: 300
   PagamentosTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -137,21 +167,6 @@ Resources:
             Method: DELETE
     Metadata:
       SamResourceId: DeletePagamentoFunction
-  ServerlessHttpApi:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      CorsConfiguration:
-        AllowOrigins:
-        - http://localhost:4200
-        - http://127.0.0.1:4200
-        AllowMethods:
-        - GET
-        - POST
-        - DELETE
-        - OPTIONS
-        AllowHeaders:
-        - Content-Type
-        - Authorization
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL

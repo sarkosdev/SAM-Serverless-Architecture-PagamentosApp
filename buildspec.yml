@@ -8,6 +8,7 @@ env:
     SAM_ARTIFACT_BUCKET: sam-artifacts-pagamentos-nuno-20260624
     SAM_S3_PREFIX: serverless-api-pagamentos-dev
     SAM_CLI_TELEMETRY: 0
+    ALLOWED_ORIGIN: http://localhost:4200
 
 phases:
   install:
@@ -34,8 +35,7 @@ phases:
       - echo "Building SAM application..."
       - sam build
       - echo "Deploying SAM application..."
-      - sam deploy --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset
-
+      - sam deploy --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN
   post_build:
     commands:
       - echo "Stack status:"

@@ -131,3 +131,17 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
 1. Remove local docker container that emulates our cloud run
     - `docker rm -f dynamodb-local`
+
+2. Restar local docker container that emulates our cloud run and re-create the DynamoDB Table
+    - `docker rm -f dynamodb-local`
+    - `docker run -d --name dynamodb-local --network sam-local -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb -inMemory`
+    - `$env:AWS_ACCESS_KEY_ID = "dummy"`
+    - `$env:AWS_SECRET_ACCESS_KEY = "dummy"`
+    - `$env:AWS_DEFAULT_REGION = "eu-west-1"`
+    - `aws dynamodb create-table --table-name PagamentosTable --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --billing-mode PAY_PER_REQUEST --endpoint-url http://localhost:8000 --region eu-west-1`
+
+3. List DynamoDB Tables locally if you wanna check if your Table actualy exists
+    - `aws dynamodb list-tables --endpoint-url http://localhost:8000 --region eu-west-1`
+
+4. Validar your SAM configuration
+    - `sam validate --template-file template.yaml --region eu-west-1`
