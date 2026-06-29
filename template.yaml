@@ -14,6 +14,23 @@ Globals:
         DYNAMODB_ENDPOINT: ""
 
 Resources:
+  # AWS Amplify (Frontend - Angular)
+  ServerlessHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - http://localhost:4200
+          - http://127.0.0.1:4200
+        AllowMethods:
+          - GET
+          - POST
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
   # AWS DyanmoDB Table (Pagamento Table)
   PagamentosTable:
     Type: AWS::DynamoDB::Table
@@ -124,23 +141,6 @@ Resources:
             ApiId: !Ref ServerlessHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
-
-  # AWS Amplify (Frontend - Angular)
-  ServerlessHttpApi:
-    Type: AWS::Serverless::HttpApi
-    Properties:
-      CorsConfiguration:
-        AllowOrigins:
-          - http://localhost:4200
-          - http://127.0.0.1:4200
-        AllowMethods:
-          - GET
-          - POST
-          - DELETE
-          - OPTIONS
-        AllowHeaders:
-          - Content-Type
-          - Authorization
 
 Outputs:
   PagamentosApiUrl:
