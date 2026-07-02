@@ -119,6 +119,16 @@ Resources:
         - COGNITO
       PreventUserExistenceErrors: ENABLED
       EnableTokenRevocation: true
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 7
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      RefreshTokenRotation:
+        Feature: ENABLED
+        RetryGracePeriodSeconds: 10
 
   # AWS Cognito Hosted UI Domain
   PagamentosUserPoolDomain:
