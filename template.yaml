@@ -102,8 +102,10 @@ Resources:
         - profile
       CallbackURLs:
         - !Ref FrontendUrl
+        - http://localhost:4200
       LogoutURLs:
         - !Ref FrontendUrl
+        - http://localhost:4200
       SupportedIdentityProviders:
         - COGNITO
       PreventUserExistenceErrors: ENABLED
