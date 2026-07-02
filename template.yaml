@@ -53,6 +53,15 @@ Resources:
           - Authorization
         AllowCredentials: false
         MaxAge: 300
+      Auth:
+        DefaultAuthorizer: CognitoJwtAuthorizer
+        Authorizers:
+          CognitoJwtAuthorizer:
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${PagamentosUserPool}"
+              audience:
+                - !Ref PagamentosUserPoolClient
+            IdentitySource: "$request.header.Authorization"
 
   # AWS DyanmoDB Table (Pagamento Table)
   PagamentosTable:
