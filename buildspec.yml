@@ -8,6 +8,8 @@ env:
     SAM_S3_PREFIX: serverless-api-pagamentos-dev
     ALLOWED_ORIGIN: https://main.d3at3wpexagb3r.amplifyapp.com
     SAM_CLI_TELEMETRY: 0
+    COGNITO_DOMAIN_PREFIX: pagamentos-app-authenticator
+    FRONTEND_URL: https://main.d3at3wpexagb3r.amplifyapp.com
 
 phases:
   install:
@@ -24,7 +26,7 @@ phases:
       - echo "Source files:"
       - ls -la
       - echo "Checking CORS in source template.yaml:"
-      - grep -n "x-amazon-apigateway-cors\|allowOrigins\|AllowedOrigin\|ServerlessHttpApi" template.yaml || true
+      - grep -n "Cognito\|UserPool\|PagamentosHttpApi\|CorsConfiguration\|AllowedOrigin" template.yaml || true
       - sam validate --template-file template.yaml --region $AWS_REGION
 
   build:
@@ -33,9 +35,9 @@ phases:
       - rm -rf .aws-sam
       - sam build
       - echo "Checking CORS in built SAM template:"
-      - grep -n "x-amazon-apigateway-cors\|allowOrigins\|AllowedOrigin\|ServerlessHttpApi" .aws-sam/build/template.yaml || true
+      - grep -n "Cognito\|UserPool\|PagamentosHttpApi\|CorsConfiguration\|AllowedOrigin" .aws-sam/build/template.yaml || true
       - echo "Deploying SAM stack..."
-      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN
+      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN FrontendUrl=$FRONTEND_URL CognitoDomainPrefix=$COGNITO_DOMAIN_PREFIX
 
   post_build:
     commands:

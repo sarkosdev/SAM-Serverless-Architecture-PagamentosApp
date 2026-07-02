@@ -148,3 +148,8 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
 5. If we are having issues connection to our backend, check the CORS configuration 
 
+6. In this architecthure we use SAM Policy Templates (DynamoDBPolicy DynamoDBWritePolicy and DynamoDBCrudPolicy) in order to give enought permissions to Lambda Functions. During `sam deploy`, CloudFormation generates automatically IAM Roles and IAM Policies with the minimum permissions necessary (least privilege principle) and attach them to each Lambda Function
+
+7. Aws Cognito Integration. Lambda functions will never validate any token, this validation occurs on API Gateway layer, this approach is recomended by AWS, choosing this solution reduces costs, because your lambda will never be called if the token isnt valid, so you dont waste resources and it also minimize the attack surface, also it reduces the ammount of code needed, thsi will make your setup much more scalable. Follow the next steps in order to achieve this:
+    - Create Cognito User Pool in AWS Console using SAM template.yaml configuration file. Our 'template.yaml' file configuration, defines the login attribute has username, disable self sign-up, disable MFA, no need for email validation and default password format
+    - 
