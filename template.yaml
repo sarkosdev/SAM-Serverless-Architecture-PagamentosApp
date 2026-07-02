@@ -115,7 +115,14 @@ Resources:
     Properties:
       Domain: !Ref CognitoDomainPrefix
       UserPoolId: !Ref PagamentosUserPool
+      ManagedLoginVersion: 2
 
+  PagamentosManagedLoginBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    Properties:
+      UserPoolId: !Ref PagamentosUserPool
+      ClientId: !Ref PagamentosUserPoolClient
+      UseCognitoProvidedValues: true
 
   # AWS Lambda (ReadPagamento Function)
   ReadPagamentosFunction:
