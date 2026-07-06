@@ -155,7 +155,22 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
     - 
 
 
-7. When adding CloudWatch, remember that you might run in to an deployment issue when creating the Log resources for each lambda, because when a lambda is created, automatically log groups are created in cloudwatch in order for the developer to check lambda logs when running. So dont add the log groups by yourself, let Lambda create the log groups associated to each function, since thats the recomended aproach by Amazon.
+7. When adding CloudWatch for Lambda Functions Logging, remember that you might run in to an deployment issue when creating the Log resources for each lambda, because when a lambda is created, automatically log groups are created in cloudwatch in order for the developer to check lambda logs when running. So dont add the log groups by yourself, let Lambda create the log groups associated to each function, since thats the recomended aproach by Amazon.
+
+    - In order to define logs retation time we will use another aproach, which is throw *aws cli*. We will grab each resource and apply the configuration we want. First run this command in order to check lambda resource names, `aws lambda list-functions --region eu-west-1 --query "Functions[?contains(FunctionName, 'Pagamento', 'D')].[FunctionName]" --output table`
+
+    - Now use the Lambda funtions names to check for log groups, `aws logs describe-log-groups --region eu-west-1 --query "logGroups[?contains(logGroupName, 'Pagamentos')].[logGroupName, retentionInDays]" --output table`
+
+    - Now we apply the retation days we want to specify for each log group assigned to each Lambda Function by running this command. You should change 'NOME_REAL_DA_LAMBDA' with the names returned on the previous command output `aws logs put-retention-policy --log-group-name "/aws/lambda/NOME_REAL_DA_LAMBDA" --retention-in-days 7 --region eu-west-1`
+
+    - Now if you re-run this command you can check that all lambda log groups have a 7 days retation set: `aws logs describe-log-groups --region eu-west-1 --query "logGroups[?contains(logGroupName, 'Pagamentos')].[logGroupName, retentionInDays]" --output table`
+
+8. Now we define API Gateway Access Logs. This is extremelly important so we can monitor how each endpoint is behaving, and this will give us a clear picture on each request that API Gateway receives. With this we will have access to information like, who called the endpoint, which route, status it returned, latency, requestId, authorization error, IP, user-agent, etc. This is really important information when it comes to production scenario
+
+    - API Gateway doesnt create a Loggroup like Lambda Functions did, so we will create it adding a section in our *template.yaml* and it will create it on the next deployment. This will create a specific log location where we can check it
+
+    - 
+
 
 
 
