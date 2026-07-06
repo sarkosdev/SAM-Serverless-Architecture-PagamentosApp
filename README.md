@@ -169,6 +169,8 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
     - API Gateway doesnt create a Loggroup like Lambda Functions did, so we will create it adding a section in our *template.yaml* and it will create it on the next deployment. This will create a specific log location where we can check it
 
+    - Change *template.yaml* file in order to specify in resource *PagamentosHttpApi* the structure of our logging messages, the kind of data it logs and where this logs should appear
+
     - 
 
 

@@ -37,7 +37,7 @@ Resources:
       AccessLogSettings: 
         DestinationArn: !GetAtt PagamentosApiAccessLogs.Arn
         Format: !Sub >
-          {
+          '{
             "requestId": "$context.requestId",
             "ip":"$context.identity.sourceIp",
             "requestTime":"$context.requestTime",
@@ -53,7 +53,7 @@ Resources:
             "jwtSubject":"$context.authorizer.claims.sub",
             "jwtUsername":"$context.authorizer.claims.username",
             "userAgent":"$context.identity.userAgent"
-          }
+          }'
 
       DefinitionBody:
         openapi: '3.0.1'
