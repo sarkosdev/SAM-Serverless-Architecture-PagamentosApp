@@ -36,24 +36,7 @@ Resources:
       # Here we define how the logs should look like and where they should be saved for AWS ApiGateway in Cloudwatch
       AccessLogSettings: 
         DestinationArn: !GetAtt PagamentosApiAccessLogs.Arn
-        Format: !Sub >
-          '{
-            "requestId": "$context.requestId",
-            "ip":"$context.identity.sourceIp",
-            "requestTime":"$context.requestTime",
-            "httpMethod":"$context.httpMethod",
-            "routeKey":"$context.routeKey",
-            "path":"$context.path",
-            "status":"$context.status",
-            "protocol":"$context.protocol",
-            "responseLength":"$context.responseLength",
-            "integrationError":"$context.integrationErrorMessage",
-            "authorizerErro":"$context.authorizer.error",
-            "authorizerPrincipalId":"$context.authorizer.principalId",
-            "jwtSubject":"$context.authorizer.claims.sub",
-            "jwtUsername":"$context.authorizer.claims.username",
-            "userAgent":"$context.identity.userAgent"
-          }'
+        Format: '{"requestId": "$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationError":"$context.integrationErrorMessage","authorizerErro":"$context.authorizer.error","authorizerPrincipalId":"$context.authorizer.principalId","jwtSubject":"$context.authorizer.claims.sub","jwtUsername":"$context.authorizer.claims.username","userAgent":"$context.identity.userAgent"}'
 
       DefinitionBody:
         openapi: '3.0.1'
