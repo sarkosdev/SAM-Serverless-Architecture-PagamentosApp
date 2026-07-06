@@ -165,13 +165,13 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
     - Now if you re-run this command you can check that all lambda log groups have a 7 days retation set: `aws logs describe-log-groups --region eu-west-1 --query "logGroups[?contains(logGroupName, 'Pagamentos')].[logGroupName, retentionInDays]" --output table`
 
-8. Now we define API Gateway Access Logs. This is extremelly important so we can monitor how each endpoint is behaving, and this will give us a clear picture on each request that API Gateway receives. With this we will have access to information like, who called the endpoint, which route, status it returned, latency, requestId, authorization error, IP, user-agent, etc. This is really important information when it comes to production scenario
+8. Now we define API Gateway Access Logs Group. This is extremelly important so we can monitor how each endpoint is behaving, and this will give us a clear picture on each request that API Gateway receives. With this we will have access to information like, who called the endpoint, which route, status it returned, latency, requestId, authorization error, IP, user-agent, response time epoch, response latency, integration status, integration latency, etc. This is really important information when it comes to production scenario
 
     - API Gateway doesnt create a Loggroup like Lambda Functions did, so we will create it adding a section in our *template.yaml* and it will create it on the next deployment. This will create a specific log location where we can check it
 
     - Change *template.yaml* file in order to specify in resource *PagamentosHttpApi* the structure of our logging messages, the kind of data it logs and where this logs should appear
 
-    - 
+9. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway
 
 
 
