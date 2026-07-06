@@ -244,39 +244,7 @@ Resources:
             Method: DELETE
 
   # AWS CloudWatch Resource section    
-  # Lambda Logs Groups (max 7 days retention) for each Lambda Function
-  ReadPagamentosFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ReadPagamentosFunction}"
-      RetentionInDays: 7
-
-  CreatePagamentoFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${CreatePagamentoFunction}"
-      RetentionInDays: 7
-
-  PagarPagamentosFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${PagarPagamentosFunction}"
-      RetentionInDays: 7
-
-  DeletePagamentoFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Delete
-    UpdateReplacePolicy: Delete
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${DeletePagamentoFunction}"
-      RetentionInDays: 7
-
+  
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL

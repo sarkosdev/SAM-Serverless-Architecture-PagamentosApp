@@ -153,3 +153,10 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 7. Aws Cognito Integration. Lambda functions will never validate any token, this validation occurs on API Gateway layer, this approach is recomended by AWS, choosing this solution reduces costs, because your lambda will never be called if the token isnt valid, so you dont waste resources and it also minimize the attack surface, also it reduces the ammount of code needed, thsi will make your setup much more scalable. Follow the next steps in order to achieve this:
     - Create Cognito User Pool in AWS Console using SAM template.yaml configuration file. Our 'template.yaml' file configuration, defines the login attribute has username, disable self sign-up, disable MFA, no need for email validation and default password format
     - 
+
+
+7. When adding CloudWatch, remember that you might run in to an deployment issue when creating the Log resources for each lambda, because when a lambda is created, automatically log groups are created in cloudwatch in order for the developer to check lambda logs when running. So dont add the log groups by yourself, let Lambda create the log groups associated to each function, since thats the recomended aproach by Amazon.
+
+
+
+
