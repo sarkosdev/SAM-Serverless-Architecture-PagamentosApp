@@ -8,6 +8,7 @@ import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
 import pagamentos.config.DynamoDbConfig;
+import pagamentos.logging.DataLogger;
 import pagamentos.repository.PagamentoRepository;
 import pagamentos.response.ApiResponse;
 import pagamentos.service.PagamentoService;
@@ -26,6 +27,9 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
 
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
+        long startTime = System.currentTimeMillis();
+        final String operation = "DELETE_PAGAMENTO";
+        
         try {
             String method = request.getRequestContext().getHttp().getMethod();
             String path = request.getRawPath();
@@ -39,16 +43,42 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
                 boolean deleted = service.deletePagamentoByProcessNum(processNum);
 
                 if (!deleted) {
-                    return ApiResponse.json(404, Map.of(
+                    APIGatewayV2HTTPResponse response = ApiResponse.json(404, Map.of(
                             "error", "Pagamento not found for processNum",
                             "processNum", processNum
                     ));
+
+                    // CloudWatch Logs
+                    DataLogger.info(
+                        context,
+                        request,
+                        operation,
+                        "Pagamento not found for processNum",
+                        Map.of(
+                                "statusCode", response.getStatusCode(),
+                                "durationMs", System.currentTimeMillis() - startTime
+                        )
+                    );
+
+                    return response;
                 }
 
-                return ApiResponse.json(200, Map.of(
+                APIGatewayV2HTTPResponse response =  ApiResponse.json(200, Map.of(
                         "message", "Pagamento deleted successfully",
                         "processNum", processNum
                 ));
+
+                // CloudWatch Logs
+                DataLogger.info(
+                    context,
+                    request,
+                    operation,
+                    "Request completed successfully",
+                    Map.of(
+                            "statusCode", response.getStatusCode(),
+                            "durationMs", System.currentTimeMillis() - startTime
+                    )
+                );
             }
 
             if (path.startsWith("/pagamentos/")) {
@@ -56,23 +86,76 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
                 boolean deleted = service.deletePagamentoById(id);
 
                 if (!deleted) {
-                    return ApiResponse.json(404, Map.of(
+                    APIGatewayV2HTTPResponse response = ApiResponse.json(404, Map.of(
                             "error", "Pagamento not found",
                             "id", id
                     ));
+
+                    // CloudWatch Logs
+                    DataLogger.info(
+                        context,
+                        request,
+                        operation,
+                        "Pagamento not found",
+                        Map.of(
+                                "statusCode", response.getStatusCode(),
+                                "durationMs", System.currentTimeMillis() - startTime
+                        )
+                    );
+
+                    return response;
                 }
 
-                return ApiResponse.json(200, Map.of(
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, Map.of(
                         "message", "Pagamento deleted successfully",
                         "id", id
                 ));
+
+                // CloudWatch Logs
+                DataLogger.info(
+                    context,
+                    request,
+                    operation,
+                    "Request completed successfully",
+                    Map.of(
+                            "statusCode", response.getStatusCode(),
+                            "durationMs", System.currentTimeMillis() - startTime
+                    )
+                );
+
+                return response;
             }
 
             return ApiResponse.json(404, Map.of("error", "Route not found"));
         } catch (IllegalArgumentException e) {
+           
+            // CloudWatch Logs
+            DataLogger.error(
+                context,
+                request,
+                operation,
+                "Request failed",
+                e,
+                Map.of(
+                        "statusCode", 400,
+                        "durationMs", System.currentTimeMillis() - startTime
+                )
+            );
             return ApiResponse.json(400, Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            e.printStackTrace();
+
+             // CloudWatch Logs
+            DataLogger.error(
+                context,
+                request,
+                operation,
+                "Internal server error",
+                e,
+                Map.of(
+                        "statusCode", 500,
+                        "durationMs", System.currentTimeMillis() - startTime
+                )
+            );
             return ApiResponse.json(500, Map.of("error", "Internal server error"));
         }
     }

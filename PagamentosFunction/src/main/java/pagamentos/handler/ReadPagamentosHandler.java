@@ -1,16 +1,18 @@
 package pagamentos.handler;
 
+import java.util.Map;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
+
 import pagamentos.config.DynamoDbConfig;
+import pagamentos.logging.DataLogger;
 import pagamentos.repository.PagamentoRepository;
 import pagamentos.response.ApiResponse;
 import pagamentos.service.PagamentoService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-
-import java.util.Map;
 
 public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
 
@@ -25,22 +27,58 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
 
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
+
+        long startTime = System.currentTimeMillis();
+        String operation = "READ_PAGAMENTO";
+
         try {
             String method = request.getRequestContext().getHttp().getMethod();
             String path = request.getRawPath();
+
 
             if (!"GET".equalsIgnoreCase(method)) {
                 return ApiResponse.json(405, Map.of("error", "Method not allowed"));
             }
 
             if ("/pagamentos".equals(path)) {
-                return ApiResponse.json(200, service.listPagamentos());
+
+                APIGatewayV2HTTPResponse response = ApiResponse.json(201, service.listPagamentos());
+
+                // CloudWatch Logs
+                DataLogger.info(
+                    context,
+                    request,
+                    operation,
+                    "Request completed successfully",
+                    Map.of(
+                            "statusCode", response.getStatusCode(),
+                            "durationMs", System.currentTimeMillis() - startTime
+                    )
+                );
+
+                return response;
             }
 
             if (path.startsWith("/pagamentos/status/")) {
                 String status = path.substring("/pagamentos/status/".length());
-                return ApiResponse.json(200, service.listPagamentosByStatus(status));
+                
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentosByStatus(status));
+                
+                // CloudWatch Logs
+                DataLogger.info(
+                    context,
+                    request,
+                    operation,
+                    "Request completed successfully",
+                    Map.of(
+                            "statusCode", response.getStatusCode(),
+                            "durationMs", System.currentTimeMillis() - startTime
+                    )
+                );
+
+                return response;                
             }
+
 
             if (path.startsWith("/pagamentos/")) {
                 String id = path.substring("/pagamentos/".length());
@@ -52,12 +90,38 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
 
                 return ApiResponse.json(200, pagamento);
             }
+            
 
             return ApiResponse.json(404, Map.of("error", "Route not found"));
         } catch (IllegalArgumentException e) {
+            // CloudWatch Logs
+            DataLogger.error(
+                context,
+                request,
+                operation,
+                "Request failed",
+                e,
+                Map.of(
+                        "statusCode", 400,
+                        "durationMs", System.currentTimeMillis() - startTime
+                )
+            );
+
             return ApiResponse.json(400, Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            e.printStackTrace();
+            // CloudWatch Logs
+            DataLogger.error(
+                context,
+                request,
+                operation,
+                "Request failed",
+                e,
+                Map.of(
+                        "statusCode", 500,
+                        "durationMs", System.currentTimeMillis() - startTime
+                )
+            );
+            
             return ApiResponse.json(500, Map.of("error", "Internal server error"));
         }
     }
