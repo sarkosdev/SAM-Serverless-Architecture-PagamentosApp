@@ -171,7 +171,9 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
     - Change *template.yaml* file in order to specify in resource *PagamentosHttpApi* the structure of our logging messages, the kind of data it logs and where this logs should appear
 
-9. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway
+9. Now we change our Lambda Functions loging format, lets create a loging pattern. We create a Java object class that will be used to transfer datab between our java classes and will be printed as logs. Our class will be named *DataLogger* and will have fields like, context, request, operation, message, extraFields, etc...
+
+10. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway
 
 
 
