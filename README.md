@@ -173,7 +173,7 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
 9. Now we change our Lambda Functions loging format, lets create a loging pattern. We create a Java object class that will be used to transfer datab between our java classes and will be printed as logs. Our class will be named *DataLogger* and will have fields like, context, request, operation, message, extraFields, etc...
 
-10. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway
+10. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway, in order to achieve this we need to eddit our *template.yaml* file. In our CloudWatch Dashboard we will have a counter for 4xx and 5xx errors, latency, AWS Lambdas Functions invocations, errors, executation duration, throttles, DynamoDB consume read capacity units, DynamoDB consume write capacity units and throttled requests.
 
 
 

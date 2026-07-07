@@ -256,7 +256,149 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-pagamentos-http-api-access"
-      RetentionInDays: 7  
+      RetentionInDays: 7
+
+  # AWS CloudWatch - Dashboard Config
+  PagamentosCloudWatchDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "${AWS::StackName}-dashboard"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# Serverless Pagamentos App\\nAPI Gateway, Lambda and DynamoDB operational dashboard"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 2,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApiGateway", "Count", "ApiId", "${PagamentosHttpApi}", { "stat": "Sum", "label": "Requests" } ],
+                  [ ".", "4xx", ".", ".", { "stat": "Sum", "label": "4XX errors" } ],
+                  [ ".", "5xx", ".", ".", { "stat": "Sum", "label": "5XX errors" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "API Gateway requests and errors",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 2,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ApiGateway", "Latency", "ApiId", "${PagamentosHttpApi}", { "stat": "Average", "label": "Average latency" } ],
+                  [ ".", ".", ".", ".", { "stat": "p95", "label": "p95 latency" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "API Gateway latency",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 8,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Invocations", "FunctionName", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read" } ],
+                  [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create" } ],
+                  [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar" } ],
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Lambda invocations",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 8,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Errors", "FunctionName", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read errors" } ],
+                  [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create errors" } ],
+                  [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar errors" } ],
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete errors" } ],
+                  [ ".", "Throttles", ".", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read throttles" } ],
+                  [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create throttles" } ],
+                  [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar throttles" } ],
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete throttles" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Lambda errors and throttles",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 14,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Duration", "FunctionName", "${ReadPagamentosFunction}", { "stat": "Average", "label": "Read avg" } ],
+                  [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Average", "label": "Create avg" } ],
+                  [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Average", "label": "Pagar avg" } ],
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Average", "label": "Delete avg" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Lambda average duration",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 14,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "${PagamentosTable}", { "stat": "Sum", "label": "Read capacity" } ],
+                  [ ".", "ConsumedWriteCapacityUnits", ".", ".", { "stat": "Sum", "label": "Write capacity" } ],
+                  [ ".", "ThrottledRequests", ".", ".", { "stat": "Sum", "label": "Throttled requests" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "DynamoDB capacity and throttles",
+                "period": 300
+              }
+            }
+          ]
+        }
+
   
 Outputs:
   PagamentosApiUrl:
@@ -278,3 +420,7 @@ Outputs:
   CognitoRegion:
     Description: AWS Region for Cognito
     Value: !Ref AWS::Region
+  
+  CloudWatchDashboardName:
+    Description: CloudWatch Dashboard name
+    Value: !Ref PagamentosCloudWatchDashboard
