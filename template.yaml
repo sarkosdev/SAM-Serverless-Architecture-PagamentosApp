@@ -15,6 +15,9 @@ Parameters:
     Type: String
     Default: https://main.d3at3wpexagb3r.amplifyapp.com
     Description: Angular application URL
+  AlarmNotificationEmail:
+    Type: String
+    Description: optic11051997@gmail.com
 
 Globals:
   Function:
@@ -36,7 +39,7 @@ Resources:
       # Here we define how the logs should look like and where they should be saved for AWS ApiGateway in Cloudwatch
       AccessLogSettings: 
         DestinationArn: !GetAtt PagamentosApiAccessLogs.Arn
-        Format: '{"requestId": "$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationError":"$context.integrationErrorMessage","authorizerErro":"$context.authorizer.error","authorizerPrincipalId":"$context.authorizer.principalId","jwtSubject":"$context.authorizer.claims.sub","requestTimeEpoch":"$contect.requestTimeEpoch","responseLatency":"$context.responseLatency","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","jwtUsername":"$context.authorizer.claims.username","userAgent":"$context.identity.userAgent"}'
+        Format: '{"requestId": "$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationError":"$context.integrationErrorMessage","authorizerError":"$context.authorizer.error","authorizerPrincipalId":"$context.authorizer.principalId","jwtSubject":"$context.authorizer.claims.sub","requestTimeEpoch":"$context.requestTimeEpoch","responseLatency":"$context.responseLatency","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","jwtUsername":"$context.authorizer.claims.username","userAgent":"$context.identity.userAgent"}'
 
       DefinitionBody:
         openapi: '3.0.1'
@@ -398,6 +401,205 @@ Resources:
             }
           ]
         }
+  
+  # AWS SNS - Alarm Topic
+  PagamentosAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alarms"
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlarmNotificationEmail
+
+  # API Gateway 500 errors Alarms
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-api-gateway-5xx"
+      AlarmDescription: API Gateway returned 5XX errors
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref PagamentosHttpApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref PagamentosAlarmTopic
+
+  # API Gateway High Latency Alarm
+  ApiGatewayHighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-api-gateway-high-latency"
+      AlarmDescription: API Gateway average latency is high
+      Namespace: AWS/ApiGateway
+      MetricName: Latency
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref PagamentosHttpApi
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 3000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref PagamentosAlarmTopic
+
+  # Lambda Errors Alarm
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-lambda-errors"
+      AlarmDescription: One or more Lambda functions returned errors
+      Metrics:
+        - Id: readErrors
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref ReadPagamentosFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: createErrors
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref CreatePagamentoFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: pagarErrors
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref PagarPagamentosFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: deleteErrors
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref DeletePagamentoFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: totalErrors
+          Expression: readErrors + createErrors + pagarErrors + deleteErrors
+          Label: Total Lambda errors
+          ReturnData: true
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref PagamentosAlarmTopic
+
+  # Lambda Functions Throttle Alarm
+  LambdaThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-lambda-throttles"
+      AlarmDescription: One or more Lambda functions were throttled
+      Metrics:
+        - Id: readThrottles
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref ReadPagamentosFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: createThrottles
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref CreatePagamentoFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: pagarThrottles
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref PagarPagamentosFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: deleteThrottles
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref DeletePagamentoFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: totalThrottles
+          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles
+          Label: Total Lambda throttles
+          ReturnData: true
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref PagamentosAlarmTopic
+
+  # DynamoDB Throttle Alarm
+  DynamoDbThrottledRequestsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-dynamodb-throttled-requests"
+      AlarmDescription: DynamoDB table has throttled requests
+      Namespace: AWS/DynamoDB
+      MetricName: ThrottledRequests
+      Dimensions:
+        - Name: TableName
+          Value: !Ref PagamentosTable
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref PagamentosAlarmTopic
+
 
   
 Outputs:
@@ -424,3 +626,7 @@ Outputs:
   CloudWatchDashboardName:
     Description: CloudWatch Dashboard name
     Value: !Ref PagamentosCloudWatchDashboard
+
+  AlarmTopicArn:
+    Description: SNS Topic ARN for CloudWatch alarms
+    Value: !Ref PagamentosAlarmTopic

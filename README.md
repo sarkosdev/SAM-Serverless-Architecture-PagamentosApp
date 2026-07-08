@@ -175,7 +175,10 @@ This solution will also be integrated with a frontend using AWS Amplify aswell a
 
 10. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway, in order to achieve this we need to eddit our *template.yaml* file. In our CloudWatch Dashboard we will have a counter for 4xx and 5xx errors, latency, AWS Lambdas Functions invocations, errors, executation duration, throttles, DynamoDB consume read capacity units, DynamoDB consume write capacity units and throttled requests.
 
+11. After our Dashboard is fully configured implement a simple Fanout architectre, where we create an SNS resource and if any alarm gets triggered we send it to our SNS that sends an email notification for our email (is not a fully fanout implementation, because it only sends the emial notification for the email, but we can later improve it, to trigger lambda functions, save logs in S3 buckets, etc). But in order to achieve this we use our template.yaml file that will create and configure our SNS resource connected to our dashboard
 
+
+12. 
 
 
 

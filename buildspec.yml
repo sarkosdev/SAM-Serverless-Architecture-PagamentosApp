@@ -10,6 +10,7 @@ env:
     SAM_CLI_TELEMETRY: 0
     COGNITO_DOMAIN_PREFIX: pagamentos-app-authenticator
     FRONTEND_URL: https://main.d3at3wpexagb3r.amplifyapp.com
+    ALARM_NOTIFICATION_EMAIL: optic11051997@gmail.com
 
 phases:
   install:
@@ -37,7 +38,7 @@ phases:
       - echo "Checking CORS in built SAM template:"
       - grep -n "Cognito\|UserPool\|PagamentosHttpApi\|CorsConfiguration\|AllowedOrigin" .aws-sam/build/template.yaml || true
       - echo "Deploying SAM stack..."
-      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN FrontendUrl=$FRONTEND_URL CognitoDomainPrefix=$COGNITO_DOMAIN_PREFIX
+      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN FrontendUrl=$FRONTEND_URL CognitoDomainPrefix=$COGNITO_DOMAIN_PREFIX AlarmNotificationEmail=$ALARM_NOTIFICATION_EMAIL
 
   post_build:
     commands:
