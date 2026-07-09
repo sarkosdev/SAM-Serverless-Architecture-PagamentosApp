@@ -1,184 +1,787 @@
 # SAM-Serverless-Architecture-PagamentosApp
-Serverless Architecture for Pagamentos Application, using AWS SAM Framework, AWS Lambda, AWS API Gateway, AWS DynamoDB and AWS Amplify
+
+A production-oriented serverless payment processing application build entirely on AWS.
+
+--- 
+
+## Project Overview
+
+The **Serverless Payments Application** is a cloud-native application designed to demonstrate how a modern payment processing platform can be built using fully managed AWS services.
+
+Rather than focusing only on implementing CRUD operations, this project aims to showcase how production-grade serverless applications are designed, secured, deployed and monitored following AWS best practices.
+
+The entire infrastructure is provisioned using **AWS SAM (Serverless Application Model)** and **CloudFormation**, allowing every AWS resource to be version-controlled and automatically deployed through a CI/CD pipeline.
+
+The application provides authenticated users with the ability to:
+
+- Create payment processes
+- List pending and processed payments
+- Process multiple payments
+- Delete payments
+- Monitor the complete application through CloudWatch dashboards and trigger alarms that notify the developer using email notification.
+
+All requests are authenticated using **Amazon Cognito** and authorized directly by **Amazon API Gateway** through native JWT validation, preventing unauthorized requests from reaching the Lambda functions, reducing unnecessary Lambda invocations, lowering operational costs and improving the overall security posture.
+
+---
+
+## Project Goals
+
+This project was created with the following objectives:
+
+- Learn and apply modern AWS serverless architecture patterns
+- Build a secure cloud-native REST API
+- Implement Infrastructure as Code using AWS SAM
+- Design an automated deployment pipeline
+- Implement production-ready monitoring and observability
+- Demonstrate AWS Well-Architected Framework best practices
+- Build a realistic portfolio project representative of enterprise applications
+
+Although intentionally simple from a business perspective, the project focuses heavily on the operational aspects that are typically expected in production environments.
+
+---
+
+## Key Features
+
+- Fully serverless backend
+- Infrastructure as Code (AWS SAM + CloudFormation)
+- REST API using Amazon API Gateway (HTTP API)
+- Amazon Cognito authentication (OAuth2 Authorization Code + PKCE)
+- Native JWT Authorizer
+- AWS Lambda business services
+- Amazon DynamoDB persistence layer
+- CI/CD pipeline using CodePipeline and CodeBuild
+- Frontend deployment using AWS Amplify
+- CloudWatch structured logging
+- CloudWatch operational dashboards
+- CloudWatch alarms with Amazon SNS notifications
+- Secure HTTPS communication end-to-end
+
+---
+
+## High-Level Architecture
+
+The following diagram illustrates the complete serverless architecture implemented for the **Pagamentos Application**.
+
+The solution follows a cloud-native design where every AWS service has a single responsibility, allowing the application to remain scalable, secure and fully managed.
+
+<p align="center">
+  <img src="./docs/images/serverless-pagamentos-architecture-diagram.png" alt="Serverless Pagamentos Application Architecture">
+</p>
+
+The application is composed of four main layers:
+
+| Layer | AWS Service | Responsibility |
+|--------|-------------|---------------|
+| Authentication | Amazon Cognito | Authenticates users and issues JWT tokens |
+| API Layer | Amazon API Gateway | Exposes REST endpoints and validates JWT tokens |
+| Business Layer | AWS Lambda | Executes the application's business logic |
+| Persistence Layer | Amazon DynamoDB | Stores payment information |
+| Observability Layer | AWS CloudWatch and Amazon SNS | Tracks down services logs, set alarms, notifies developers when alarms are triggered |
+
+---
+
+## Request Flow
+
+Every request follows the same execution flow;
+
+1. The user authenticates through Amazon Cognito Hosted UI;
+2. Cognito issues an OAuth2 Authorization Code and JWT tokens;
+3. The frontend sends the Access Token inside the Authorization header;
+4. Amazon API Gateway validates the JWT token before forwarding the request;
+5. If the token is invalid, the request is rejected immediately and no Lambda function is executed;
+6. If the token is valid, API Gateway routes the request to the corresponding Lambda Function
+7. The Lambda executes the business logic;
+8. The Lambda interacts with Amazon DynamoDB;
+9. The response is returned to the frontend;
+10. Frontend is updated with the new data;
+
+Because authentication happens at the API Gateway layer, Lambda functions remain completely focused on business logic, this reduces cost and increase security.
+
+This follows the AWS Well-Architected Framework recommendation of separating security concerns from application code.
+
+---
+
+## Lambda Design
+
+Instead of implementing a single Lambda responsible for every endpoint, the application adopts a **Single Responsibility** approach.
+
+Each business capability is implemented by its own Lambda Function.
+
+| Lambda Function | Responsibility |
+|-----------------|---------------|
+| ReadPagamentosFunction | Retrieve payments |
+| CreatePagamentoFunction | Create new payment processes |
+| PagarPagamentosFunction | Process pending payments |
+| DeletePagamentoFunction | Delete payment processes |
+
+This design provides several advantages:
+
+- Smaller deployment packages
+- Better separation of responsibilities
+- Independent scaling
+- Easier maintenance
+- Reduced blast radius during deployments
+
+---
+
+## Why this Architecture?
+
+The goal of this project was not simply to build a CRUD application, but to explore how a production-oriented serverless application can be designed using AWS managed services.
+
+Every AWS service was selected based on its responsibilities, scalability characteristics and operational benefits for our use case.
+
+### Amazon API Gateway
+
+API Gateway provides a fully managed HTTP interface for the application.
+
+It was selected because it offers:
+
+- Native JWT authentication
+- Automatic HTTPS
+- Built-in CORS support
+- Request routing
+- Access logging
+- CloudWatch integration
+
+### AWS Lambda
+
+Instead of running a traditional backend server, each business capability is implemented as an independent Lambda function.
+
+This approach provides:
+
+- Automatic scaling
+- Pay-per-use pricing
+- Independent deployments
+- Reduced operational overhead
+
+### Amazon DynamoDB
+
+DynamoDB was selected because the application requires a serverless NoSQL database with predictable low latency and automatic scaling.
+
+Unlike a relational database, there is no infrastructure to provision or maintain using this kind of solution in this scenario.
+
+### Amazon Cognito
+
+Authentication is delegated entirely to Amazon Cognito.
+
+This removes the complexity of implementing:
+
+- Password storage
+- Password reset
+- MFA
+- OAuth2
+- OpenID Connect
+- JWT generation
+
+### AWS SAM
+
+Infrastructure is managed through Infrastructure as Code.
+
+Every AWS resource—including API Gateway, Lambda functions, Cognito, DynamoDB, CloudWatch dashboards and alarms—is version-controlled and automatically deployed using AWS Serverless Application Model.
+
+### CloudWatch
+
+Operational monitoring is implemented using native CloudWatch metrics, structured logs, dashboards and alarms.
+
+This provides complete visibility into the application's health without requiring third-party monitoring solutions.
+
+---
+
+## Security Architecture
+
+Authentication and authorization are implemented using native AWS services.
+
+Amazon Cognito is responsible for authenticating users and issuing JWT tokens, Amazon API Gateway performs JWT validation before invoking any Lambda function.
+
+This architecture provides several benefits:
+
+- Unauthorized requests never invoke Lambda
+- Lower execution cost
+- Smaller attack surface
+- Less authentication code
+- Centralized security model
+
+The backend never validates JWT tokens manually.
+
+Instead, Lambda functions trust API Gateway as the authentication layer and are only executed when JWT tokens are valid.
+
+### IAM and Least Privilege
+
+The project uses AWS SAM Policy Templates to grant DynamoDB permissions to Lambda functions.
+
+Examples include:
+
+- `DynamoDBReadPolicy`
+- `DynamoDBWritePolicy`
+- `DynamoDBCrudPolicy`
+
+During deployment, CloudFormation generates the required IAM Roles and IAM Policies and attaches them to the correct Lambda functions.
+
+Each function receives only the permissions required to execute its responsibility, following the **Principle of Least Privilege**.
+
+---
+
+## Observability
+
+The application implements a complete monitoring strategy using Amazon CloudWatch.
+
+### API Gateway
+
+API Gateway access logs are enabled and stored in a dedicated CloudWatch Log Group.
+
+The access log format captures useful operational information, including:
+
+- Request ID
+- HTTP method
+- Route key
+- Status code
+- Source IP
+- User agent
+- JWT subject
+- JWT username
+- Integration latency
+- Response latency
+- Integration status
+
+### Lambda Functions
+
+Lambda functions produce structured JSON logs to improve troubleshooting and querying through CloudWatch Logs Insights.
+
+The structured logs include:
+
+- Operation name
+- Request ID
+- Function name
+- HTTP method
+- Route
+- Username
+- Status code
+- Duration
+- Error information
+
+### DynamoDB
+
+DynamoDB is monitored through native CloudWatch metrics, including:
+
+- Consumed Read Capacity Units
+- Consumed Write Capacity Units
+- Throttled Requests
+
+### Dashboards
+
+A CloudWatch Dashboard is automatically provisioned through AWS SAM.
+
+The dashboard provides a centralized operational view of:
+
+- API Gateway requests and errors
+- API Gateway latency
+- Lambda invocations
+- Lambda errors
+- Lambda duration
+- Lambda throttles
+- DynamoDB capacity usage
+- DynamoDB throttled requests
+
+### Alerts
+
+CloudWatch Alarms continuously monitor the infrastructure.
+
+When an alarm threshold is exceeded, the alarm publishes a message to an Amazon SNS topic. The SNS topic currently sends email notifications.
+
+Current notification flow:
+
+```text
+CloudWatch Alarm
+      ↓
+Amazon SNS Topic
+      ↓
+Email Notification
+```
+
+This can evolve into a broader fan-out notification pattern by adding more SNS subscribers such as Lambda, SQS, EventBridge, Slack webhooks, Microsoft Teams, SMS and much more.
+
+---
+
+## Continuous Integration & Continuous Deployment (CI/CD)
+
+The application follows a fully automated deployment strategy.
+
+Backend and frontend are maintained in separate Git repositories and each repository owns its own deployment pipeline.
+
+This separation allows both applications to evolve independently while keeping the deployment process simple and reliable.
+
+Bellow you can see a diagram that represent both deployment pipelines.
+
+<p align="center">
+  <img src="./docs/images/ci-cd-diagram.png"
+       alt="Serverless Payments CI/CD Pipeline">
+</p>
 
 
-## Professional 'PagamentosApp' Application Architecture - Guide
+### Why Separate Pipelines?
 
-### 1. Description
+Backend and frontend deployments intentionally remain independent.
 
-'PagamentosApp' is a payment receipts application, that calculates the value of each invoice.
-This is the backend serverless architecture solution for this application, using api gateway, four lambdas functions and dynamoDB table.
-This solution will also be integrated with a frontend using AWS Amplify aswell as Cognito for Authentication and Authorization.
+This approach provides several advantages:
 
-### 2. Pre-Requirements
+- Faster deployments
+- Independent release cycles
+- Smaller deployment failures
+- Easier rollback strategy
+- Better separation of responsibilities
 
-1. Install IDE (I installed VS CODE);
-2. Install *AWS CLI* locally on your dev machine;
-3. Create a IAM User with the requirement permissions in order to perform operations on AWS Console;
-4. Configure *AWS CLI* in order to have access to cloud (using IAM Role) locally on your machine;
-5. Install YAML Languange support on VS Code;
-6. Install and configure AWS SAM
-7. Install docker desktop (emolutes cloud testing locally)
+For example, a frontend change does not trigger any backend deployment, and infrastructure changes do not rebuild the Angular application.
 
-### 3. Implementation - Locally
+This reduces deployment time and minimizes operational risk.
 
-1. Create a github repository;
+### Backend Deployment Pipeline
 
-2. Clone github repository in to your development machine;
+The backend infrastructure is deployed automatically through **AWS CodePipeline** and **AWS CodeBuild**.
 
-3. Create connection between GitHub and AWS Console, CodePipeline and CodeBuild
-    - Sign in to AWS Console
-    - Make sure Region is selected as the correct one (example: eu-west-1)
-    - Move to 'CodePipeline' and press 'Create new Pipeline'
-        - Choose 'Build Custom Pipeline'
-        - Name: api-pagamentos-pipeline
-        - Execution Mode: Queued
-        - Source Stage:
-            - Source Provider: Github (via Github App)
-            - Connection: Connect to Github, define connection name and access your github account and repository
-            - Output artifact format: CodePipeline default
-            - Next
-        - Build stage:
-            - Other Build Porviders: AWS CodeBuild
-                - Project name: api-pagamento-build-stage
-                - Project type: Default project
-                - Source: AWS CodePipeline
-                - Environment:
-                    - Image: Managed image
-                    - Compute: Lambda
-                    - Operation System: Amazon Linux
-                    - Runtime: Java
-                    - Image: aws/codebuild/amazonlinux-x86_64-lambda-standard:corretto25
-                    - Image Version: last version
-                - BuildSpec:
-                    - Use a buildspec file: buildspec.yml
-                - Service permissions:
-                    - Select the Role created on IAM that have the permissions for the build
+Whenever a commit is pushed to the `main` branch, CodePipeline starts a new deployment.
 
-4. Create project locally using sam template command;
-    - $ `sam init --name serverless-api-pagamentos --runtime java25 --dependency-manager maven --app-template hello-world --package-type Zip`
+The pipeline executes in the following steps:
 
-5. Create DynamoDB container locally in order to test application locally;
-    - `docker network create sam-local`
-    - `docker run -d --name dynamodb-local --network sam-local -p 8000:8000 amazon/dynamodb-local`
+1. Retrieve the latest source code from GitHub.
+2. Start an AWS CodeBuild project.
+3. Install the required build tools.
+4. Validate the AWS SAM template.
+5. Build every Lambda function.
+6. Package deployment artifacts.
+7. Upload packaged artifacts to Amazon S3.
+8. Deploy the CloudFormation stack using AWS SAM.
 
-6. Lets create DynamoDB table locally; 
-    - `$env:AWS_ACCESS_KEY_ID="dummy"`
-    - `$env:AWS_SECRET_ACCESS_KEY="dummy"`
-    - `$env:AWS_REGION="eu-west-1"`
-    - `aws dynamodb create-table --table-name PagamentosTable --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --billing-mode PAY_PER_REQUEST --endpoint-url http://localhost:8000 --region eu-west-1`
+The deployment process is defined in `buildspec.yml`.
 
-7. Check if table was created sucessfully, if you see the 'PagementosTable' on the list, then everything went smooth
-    - `aws dynamodb list-tables --endpoint-url http://localhost:8000 --region eu-west-1`
-
-8. Create LambdaFunctions According to our 'Pagamentos' API scenario. Java Code structer used for our architecture. We will use four Lambda Functions instead, to split reponsabilities between them
-    - ReadPagamentoFunction
-    - CreatePagamentoFunction
-    - PagarPagamentoFunction
-    - DeletePagamentoFunction
+Because the infrastructure is managed through Infrastructure as Code, every deployment remains reproducible and version controlled.
 
 
-8. Make the changes needed when it comes to your java class and your .yaml file. After changing the java code, allways compile the code again, run the following command inside the Lambda Function root folder 
-    - `mvn clean package -DskipTests -e`
+### Frontend Deployment Pipeline
 
-9. Test your application locally. The second command launches a local api ready to be tested. Everytime you change template.yaml file you need to rebuild it
-    - `sam build`
-    - `sam local start-api --template .aws-sam/build/template.yaml --env-vars env.json --docker-network sam-local`
+The frontend is hosted using **AWS Amplify Hosting**.
 
-10. Verify locally the values inside our DynamoDB table 
-    - `aws dynamodb scan --table-name PagamentosTable --endpoint-url http://localhost:8000  --region eu-west-1`
+Amplify continuously monitors the frontend repository, whenever changes are pushed to the **main** branch, Amplify automatically triggers:
 
-11. Verify how many items there is on table
-    - `aws dynamodb scan --table-name PagamentosTable --select COUNT --endpoint-url http://localhost:8000 --region eu-west-1`
+1. Installs project dependencies (`npm ci`)
+2. Builds the Angular application
+3. Generates the production artifacts
+4. Deploys the new version
 
-12. Cleaner output where we only retrieve the 'Items' straight from the table
-    - `aws dynamodb scan --table-name PagamentosTable --endpoint-url http://localhost:8000 --region eu-west-1 --query "Items"`
+No manual deployment steps are required, which decreases delivery time.
 
-13. If you using a powershell cli use this commands instead, in order to add an entry to our DynamoDB table. First command we create the body, and the second we send the body using a POST method throw our API url
-    - `$body = @{ processNum = "PROC-CLOUD-101"; processValue = "25.50" } | ConvertTo-Json`
-    - `Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:3000/pagamentos" -ContentType "application/json" -Body $body`
-
-15. Check the list of 'Pagamentos' calling GET '/pagamentos' that lists every item in the table
-    - `curl.exe -i http://127.0.0.1:3000/pagamentos`
-
-16. Instead we can use the Powershell aproach where we use the similar CLI command that we used to create the entry in the table
-    - `Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:3000/pagamentos"`
-
-16. Access the list according to status, either PENDING or PAGO, returning all values from our DynamoDB table (using PowerShell). Use one of either endpoint for both scenarios
-    - `Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:3000/pagamentos/status/PENDING"`
-    - `Invoke-RestMethod -Method GET -Uri "http://127.0.0.1:3000/pagamentos/status/PAGO"`
-
-17. Process functionality in order to process the payment according to the list of process numbers passed
-    - `$body = @{listaProcess = @("PROC-PIPELINE-001", "test-1")} | ConvertTo-Json`
-    - `Invoke-RestMethod -Method POST -Uri "http://127.0.0.1:3000/pagamentos/pagar" -ContentType "application/json" -Body $body`
-
-18. If you ever need to delete one record from our DynamoDB 'Pagamentos' table. Chande 'PROC-001' for your process number
-    - `Invoke-RestMethod -Method DELETE -Uri "http://127.0.0.1:3000/pagamentos/process/PROC-001"`
-
-19. After the application is fully deployed on AWS Cloud, navigate to CodeBuild, Build projects and select the build that just runned and checked the URL that was generated in order to perform the communication with the api. Next it follows a pratical example of a request on how to create a 'Pagamento' inside our DynamoDB table using the api we just deployed
-    - `$api = https://0b6hq996lk.execute-api.eu-west-1.amazonaws.com/pagamentos`
-    - `$body = @{ processNum = "PROC-CLOUD-101"; processValue = "25.50" } | ConvertTo-Json`
-    - `Invoke-RestMethod -Method POST -Uri $api -ContentType "application/json" -Body $body`
-
-20. Check the entry we just added to the DynamoDB table one of the two requests
-    - `Invoke-RestMethod -Method GET -Uri $api`
-    - `Invoke-RestMethod -Method GET -Uri $api/status/PENDING`
+A frontend change does not trigger a backend deployment, and a backend infrastructure change does not rebuild the frontend.
 
 
+### Infrastructure as Code
+
+Every backend resource is provisioned through AWS SAM and CloudFormation.
+
+The deployment automatically creates or updates:
+
+- Amazon API Gateway
+- AWS Lambda functions
+- Amazon DynamoDB table
+- Amazon Cognito User Pool
+- Cognito App Client
+- Cognito Hosted UI Domain
+- JWT Authorizer
+- IAM Roles and Policies
+- CloudWatch Dashboard
+- CloudWatch Alarms
+- CloudWatch Log Groups
+- Amazon SNS Topic
+
+This ensures that the backend environment is reproducible, auditable and version-controlled.
 
 
-## TIPS
+### Deployment Parameters
 
-1. Remove local docker container that emulates our cloud run
-    - `docker rm -f dynamodb-local`
+Environment-specific values are injected into the deployment through CloudFormation parameters.
 
-2. Restar local docker container that emulates our cloud run and re-create the DynamoDB Table
-    - `docker rm -f dynamodb-local`
-    - `docker run -d --name dynamodb-local --network sam-local -p 8000:8000 amazon/dynamodb-local -jar DynamoDBLocal.jar -sharedDb -inMemory`
-    - `$env:AWS_ACCESS_KEY_ID = "dummy"`
-    - `$env:AWS_SECRET_ACCESS_KEY = "dummy"`
-    - `$env:AWS_DEFAULT_REGION = "eu-west-1"`
-    - `aws dynamodb create-table --table-name PagamentosTable --attribute-definitions AttributeName=id,AttributeType=S --key-schema AttributeName=id,KeyType=HASH --billing-mode PAY_PER_REQUEST --endpoint-url http://localhost:8000 --region eu-west-1`
+| Parameter | Description |
+|-----------|-------------|
+| `AllowedOrigin` | Frontend origin allowed by CORS |
+| `FrontendUrl` | Cognito callback and logout URL |
+| `CognitoDomainPrefix` | Cognito Hosted UI domain prefix |
+| `AlarmNotificationEmail` | Email address used by SNS alarm notifications |
 
-3. List DynamoDB Tables locally if you wanna check if your Table actualy exists
-    - `aws dynamodb list-tables --endpoint-url http://localhost:8000 --region eu-west-1`
+This allows the same template to be reused across environments without ever changing application code.
 
-4. Validar your SAM configuration
-    - `sam validate --template-file template.yaml --region eu-west-1`
+---
 
-5. If we are having issues connection to our backend, check the CORS configuration 
+## Local Development
 
-6. In this architecthure we use SAM Policy Templates (DynamoDBPolicy DynamoDBWritePolicy and DynamoDBCrudPolicy) in order to give enought permissions to Lambda Functions. During `sam deploy`, CloudFormation generates automatically IAM Roles and IAM Policies with the minimum permissions necessary (least privilege principle) and attach them to each Lambda Function
+This backend can be executed locally using **AWS SAM CLI** and **DynamoDB Local**.
 
-7. Aws Cognito Integration. Lambda functions will never validate any token, this validation occurs on API Gateway layer, this approach is recomended by AWS, choosing this solution reduces costs, because your lambda will never be called if the token isnt valid, so you dont waste resources and it also minimize the attack surface, also it reduces the ammount of code needed, thsi will make your setup much more scalable. Follow the next steps in order to achieve this:
-    - Create Cognito User Pool in AWS Console using SAM template.yaml configuration file. Our 'template.yaml' file configuration, defines the login attribute has username, disable self sign-up, disable MFA, no need for email validation and default password format
-    - 
+The local environment emulates the backend flow as closely as possible:
+
+```text
+Local API Gateway
+      ↓
+SAM Local Lambda containers
+      ↓
+DynamoDB Local container
+```
+
+Frontend local development is documented separately in the frontend repository.
+
+### Prerequisites
+
+Install the following tools:
+
+- Java 25
+- Maven
+- Docker
+- AWS CLI
+- AWS SAM CLI
+- Git
+
+Validate the installation:
+
+```powershell
+java -version
+mvn -version
+docker --version
+aws --version
+sam --version
+```
+
+### Clone the repository
+
+```powershell
+git clone https://github.com/sarkosdev/SAM-Serverless-Architecture-PagamentosApp.git
+cd SAM-Serverless-Architecture-PagamentosApp
+```
+
+### Start DynamoDB Local
+
+Create a Docker network:
+
+```powershell
+docker network create sam-local
+```
+
+Start DynamoDB Local:
+
+```powershell
+docker run -d `
+  --name dynamodb-local `
+  --network sam-local `
+  -p 8000:8000 `
+  amazon/dynamodb-local `
+  -jar DynamoDBLocal.jar `
+  -sharedDb `
+  -inMemory
+```
+
+DynamoDB Local is available from the host machine at:
+
+```text
+http://localhost:8000
+```
+
+Inside SAM Lambda containers, it is accessed through:
+
+```text
+http://dynamodb-local:8000
+```
+
+### Configure Local AWS Dummy Credentials
+
+DynamoDB Local does not require real AWS credentials, but the AWS SDK expects credentials to exist.
+
+```powershell
+$env:AWS_ACCESS_KEY_ID="dummy"
+$env:AWS_SECRET_ACCESS_KEY="dummy"
+$env:AWS_REGION="eu-west-1"
+```
+
+### Create the Local DynamoDB Table
+
+```powershell
+aws dynamodb create-table `
+  --table-name PagamentosTable `
+  --attribute-definitions AttributeName=id,AttributeType=S `
+  --key-schema AttributeName=id,KeyType=HASH `
+  --billing-mode PAY_PER_REQUEST `
+  --endpoint-url http://localhost:8000 `
+  --region eu-west-1
+```
+
+Validate the table:
+
+```powershell
+aws dynamodb list-tables `
+  --endpoint-url http://localhost:8000 `
+  --region eu-west-1
+```
+
+Expected output:
+
+```json
+{
+  "TableNames": [
+    "PagamentosTable"
+  ]
+}
+```
+
+### Local Environment Variables
+
+Local Lambda functions use `env.json` to override cloud environment variables.
+
+Example:
+
+```json
+{
+  "Parameters": {
+    "TABLE_NAME": "PagamentosTable",
+    "DYNAMODB_ENDPOINT": "http://dynamodb-local:8000",
+    "AWS_REGION": "eu-west-1"
+  }
+}
+```
+
+`DYNAMODB_ENDPOINT` is only used locally. In AWS, this variable remains empty and the AWS SDK connects to the real DynamoDB service endpoint.
+
+### Build the Application
+
+```powershell
+sam build
+```
+
+This compiles the Java Lambda functions and creates the `.aws-sam/build` directory.
+
+If Java code changes, rebuild the application:
+
+```powershell
+sam build
+```
+
+If `template.yaml` changes, rebuild and restart SAM Local.
+
+### Start the Local API
+
+```powershell
+sam local start-api `
+  --template .aws-sam/build/template.yaml `
+  --env-vars env.json `
+  --docker-network sam-local
+```
+
+The local API will be available at:
+
+```text
+http://127.0.0.1:3000
+```
+
+---
+
+## Local Development Notes
+
+- Local DynamoDB uses dummy AWS credentials.
+- The local table name is `PagamentosTable`.
+- The deployed cloud table name is generated by CloudFormation.
+- SAM Local runs Lambda functions inside Docker containers.
+- The local API does not represent the full production authentication flow.
+- Production authentication is enforced by API Gateway through the Cognito JWT Authorizer.
+- Frontend local development is documented separately in the frontend repository *README.md*.
+
+---
+
+## API Reference
+
+All production API requests require a valid Cognito Access Token sent in the `Authorization` header.
+
+```http
+Authorization: Bearer <access_token>
+```
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/pagamentos` | List all payments |
+| `GET` | `/pagamentos/{id}` | Retrieve a payment by id |
+| `GET` | `/pagamentos/status/{status}` | List payments by status |
+| `POST` | `/pagamentos` | Create a new payment process |
+| `POST` | `/pagamentos/pagar` | Process pending payments |
+| `DELETE` | `/pagamentos/{id}` | Delete payment by id |
+| `DELETE` | `/pagamentos/process/{processNum}` | Delete payment by process number |
+
+### Payment Status
+
+Supported values:
+
+- `PENDING`
+- `PAGO`
+
+### Create Payment
+
+```http
+POST /pagamentos
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+Request:
+
+```json
+{
+  "processNum": "PROC-001",
+  "processValue": "25.50"
+}
+```
+
+### Process Payments
+
+```http
+POST /pagamentos/pagar
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+Request:
+
+```json
+{
+  "listaProcess": [
+    "PROC-001",
+    "PROC-002"
+  ]
+}
+```
+
+### Common Status Codes
+
+| Status Code | Meaning |
+|-------------|---------|
+| `200` | Request completed successfully |
+| `201` | Resource created successfully |
+| `400` | Invalid request |
+| `401` | Missing or invalid JWT token |
+| `404` | Resource not found |
+| `500` | Internal server error |
+
+---
+
+## Useful Commands
+
+### Validate the SAM template
+
+```powershell
+sam validate --template-file template.yaml --region eu-west-1
+```
+
+### Compile Lambda functions
+```powershell
+mvn clean install -DskipTests
+```
+
+### Build the SAM application
+
+```powershell
+sam build
+```
+
+### Start the local API
+
+```powershell
+sam local start-api `
+  --template .aws-sam/build/template.yaml `
+  --env-vars env.json `
+  --docker-network sam-local
+```
+
+### Scan DynamoDB Local
+
+```powershell
+aws dynamodb scan `
+  --table-name PagamentosTable `
+  --endpoint-url http://localhost:8000 `
+  --region eu-west-1
+```
+
+### Count items in DynamoDB Local
+
+```powershell
+aws dynamodb scan `
+  --table-name PagamentosTable `
+  --select COUNT `
+  --endpoint-url http://localhost:8000 `
+  --region eu-west-1
+```
+
+### Remove DynamoDB Local container
+
+```powershell
+docker rm -f dynamodb-local
+```
+
+### Check CloudFormation outputs
+
+```powershell
+aws cloudformation describe-stacks `
+  --stack-name serverless-api-pagamentos-dev `
+  --region eu-west-1 `
+  --query "Stacks[0].Outputs"
+```
+
+### Test SNS alarm notification manually
+
+```powershell
+aws cloudwatch set-alarm-state `
+  --alarm-name "serverless-api-pagamentos-dev-api-gateway-5xx" `
+  --state-value ALARM `
+  --state-reason "Manual test of alarm notification" `
+  --region eu-west-1
+```
+
+Return the alarm to OK:
+
+```powershell
+aws cloudwatch set-alarm-state `
+  --alarm-name "serverless-api-pagamentos-dev-api-gateway-5xx" `
+  --state-value OK `
+  --state-reason "Manual test completed" `
+  --region eu-west-1
+```
+---
 
 
-7. When adding CloudWatch for Lambda Functions Logging, remember that you might run in to an deployment issue when creating the Log resources for each lambda, because when a lambda is created, automatically log groups are created in cloudwatch in order for the developer to check lambda logs when running. So dont add the log groups by yourself, let Lambda create the log groups associated to each function, since thats the recomended aproach by Amazon.
+## Future Improvements
 
-    - In order to define logs retation time we will use another aproach, which is throw *aws cli*. We will grab each resource and apply the configuration we want. First run this command in order to check lambda resource names, `aws lambda list-functions --region eu-west-1 --query "Functions[?contains(FunctionName, 'Pagamento', 'D')].[FunctionName]" --output table`
+Potential improvements for future iterations:
 
-    - Now use the Lambda funtions names to check for log groups, `aws logs describe-log-groups --region eu-west-1 --query "logGroups[?contains(logGroupName, 'Pagamentos')].[logGroupName, retentionInDays]" --output table`
+- Add Cognito groups for role-based access control
+- Add API Gateway request validation
+- Add custom domain names for frontend and backend
+- Add WAF protection in front of API Gateway
+- Add X-Ray distributed tracing
+- Add automated integration tests in the pipeline
+- Add separate environments for dev, staging and production
+- Replace broad SAM policy templates with fully custom IAM policies
+- Add DynamoDB Global Secondary Indexes if new access patterns require them
+- Add dead-letter queues for asynchronous workloads if introduced later
 
-    - Now we apply the retation days we want to specify for each log group assigned to each Lambda Function by running this command. You should change 'NOME_REAL_DA_LAMBDA' with the names returned on the previous command output `aws logs put-retention-policy --log-group-name "/aws/lambda/NOME_REAL_DA_LAMBDA" --retention-in-days 7 --region eu-west-1`
+---
 
-    - Now if you re-run this command you can check that all lambda log groups have a 7 days retation set: `aws logs describe-log-groups --region eu-west-1 --query "logGroups[?contains(logGroupName, 'Pagamentos')].[logGroupName, retentionInDays]" --output table`
+## Repository Notes
 
-8. Now we define API Gateway Access Logs Group. This is extremelly important so we can monitor how each endpoint is behaving, and this will give us a clear picture on each request that API Gateway receives. With this we will have access to information like, who called the endpoint, which route, status it returned, latency, requestId, authorization error, IP, user-agent, response time epoch, response latency, integration status, integration latency, etc. This is really important information when it comes to production scenario
+This repository contains the backend implementation only.
 
-    - API Gateway doesnt create a Loggroup like Lambda Functions did, so we will create it adding a section in our *template.yaml* and it will create it on the next deployment. This will create a specific log location where we can check it
+The frontend Angular application is maintained in a separate repository and has its own README covering:
 
-    - Change *template.yaml* file in order to specify in resource *PagamentosHttpApi* the structure of our logging messages, the kind of data it logs and where this logs should appear
+- Angular project structure
+- Cognito integration in the frontend
+- Auth guards and interceptors
+- Local proxy configuration
+- Amplify Hosting deployment
 
-9. Now we change our Lambda Functions loging format, lets create a loging pattern. We create a Java object class that will be used to transfer datab between our java classes and will be printed as logs. Our class will be named *DataLogger* and will have fields like, context, request, operation, message, extraFields, etc...
+---
 
-10. Its time to configure our CloudWatch Dashboard to monitor logs from our resources DynamoDB, Lambda Functions and ApiGateway, in order to achieve this we need to eddit our *template.yaml* file. In our CloudWatch Dashboard we will have a counter for 4xx and 5xx errors, latency, AWS Lambdas Functions invocations, errors, executation duration, throttles, DynamoDB consume read capacity units, DynamoDB consume write capacity units and throttled requests.
+## License
 
-11. After our Dashboard is fully configured implement a simple Fanout architectre, where we create an SNS resource and if any alarm gets triggered we send it to our SNS that sends an email notification for our email (is not a fully fanout implementation, because it only sends the emial notification for the email, but we can later improve it, to trigger lambda functions, save logs in S3 buckets, etc). But in order to achieve this we use our template.yaml file that will create and configure our SNS resource connected to our dashboard
+This project is intended for learning, portfolio and architectural demonstration purposes.
 
-
-12. 
-
-
-
+**Nuno Cruz, 07/09/2026**
