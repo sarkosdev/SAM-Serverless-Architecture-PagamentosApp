@@ -36,6 +36,7 @@ public class PagamentoService {
                 "processNum", AttributeValue.fromS(request.processNum()),
                 "processValue", AttributeValue.fromS(request.processValue()),
                 "status", AttributeValue.fromS("PENDING"),
+                "type", AttributeValue.fromS("PROCESSO"),
                 "createdAt", AttributeValue.fromS(createdAt)
         );
 
@@ -47,6 +48,7 @@ public class PagamentoService {
                 "processNum", request.processNum(),
                 "processValue", request.processValue(),
                 "status", "PENDING",
+                "type", "PROCESSO",
                 "createdAt", createdAt
         );
     }
