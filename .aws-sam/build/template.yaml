@@ -6,6 +6,17 @@ Parameters:
     Type: String
     Default: http://localhost:4200
     Description: Frontend origin allowed to call the API through CORS
+  CognitoDomainPrefix:
+    Type: String
+    Default: pagamentos-app-authenticator
+    Description: Prefix for the Cognito Hosted UI domain
+  FrontendUrl:
+    Type: String
+    Default: https://main.d3at3wpexagb3r.amplifyapp.com
+    Description: Angular application URL
+  AlarmNotificationEmail:
+    Type: String
+    Description: optic11051997@gmail.com
 Globals:
   Function:
     Runtime: java25
@@ -20,6 +31,13 @@ Resources:
   PagamentosHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
+      StageName: $default
+      AccessLogSettings:
+        DestinationArn:
+          Fn::GetAtt:
+          - PagamentosApiAccessLogs
+          - Arn
+        Format: '{"requestId": "$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationError":"$context.integrationErrorMessage","authorizerError":"$context.authorizer.error","authorizerPrincipalId":"$context.authorizer.principalId","jwtSubject":"$context.authorizer.claims.sub","requestTimeEpoch":"$context.requestTimeEpoch","responseLatency":"$context.responseLatency","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","jwtUsername":"$context.authorizer.claims.username","userAgent":"$context.identity.userAgent"}'
       DefinitionBody:
         openapi: 3.0.1
         info:
@@ -31,6 +49,7 @@ Resources:
         AllowOrigins:
         - Ref: AllowedOrigin
         - http://127.0.0.1:4200
+        - http://localhost:4200
         AllowMethods:
         - GET
         - POST
@@ -41,6 +60,16 @@ Resources:
         - Authorization
         AllowCredentials: false
         MaxAge: 300
+      Auth:
+        DefaultAuthorizer: CognitoJwtAuthorizer
+        Authorizers:
+          CognitoJwtAuthorizer:
+            JwtConfiguration:
+              issuer:
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${PagamentosUserPool}
+              audience:
+              - Ref: PagamentosUserPoolClient
+            IdentitySource: $request.header.Authorization
   PagamentosTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -53,6 +82,74 @@ Resources:
       KeySchema:
       - AttributeName: id
         KeyType: HASH
+  PagamentosUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName:
+        Fn::Sub: ${AWS::StackName}-user-pool
+      UsernameConfiguration:
+        CaseSensitive: false
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      MfaConfiguration: 'OFF'
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          TemporaryPasswordValidityDays: 7
+  PagamentosUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: pagamentos-app-client
+      UserPoolId:
+        Ref: PagamentosUserPool
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows:
+      - code
+      AllowedOAuthScopes:
+      - openid
+      - email
+      - profile
+      CallbackURLs:
+      - Ref: FrontendUrl
+      - http://localhost:4200
+      LogoutURLs:
+      - Ref: FrontendUrl
+      - http://localhost:4200
+      SupportedIdentityProviders:
+      - COGNITO
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 7
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      RefreshTokenRotation:
+        Feature: ENABLED
+        RetryGracePeriodSeconds: 10
+  PagamentosUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain:
+        Ref: CognitoDomainPrefix
+      UserPoolId:
+        Ref: PagamentosUserPool
+      ManagedLoginVersion: 2
+  PagamentosManagedLoginBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    Properties:
+      UserPoolId:
+        Ref: PagamentosUserPool
+      ClientId:
+        Ref: PagamentosUserPoolClient
+      UseCognitoProvidedValues: true
   ReadPagamentosFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -166,8 +263,326 @@ Resources:
             Method: DELETE
     Metadata:
       SamResourceId: DeletePagamentoFunction
+  PagamentosApiAccessLogs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/apigateway/${AWS::StackName}-pagamentos-http-api-access
+      RetentionInDays: 7
+  PagamentosCloudWatchDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName:
+        Fn::Sub: ${AWS::StackName}-dashboard
+      DashboardBody:
+        Fn::Sub: "{\n  \"widgets\": [\n    {\n      \"type\": \"text\",\n      \"\
+          x\": 0,\n      \"y\": 0,\n      \"width\": 24,\n      \"height\": 2,\n \
+          \     \"properties\": {\n        \"markdown\": \"# Serverless Pagamentos\
+          \ App\\\\nAPI Gateway, Lambda and DynamoDB operational dashboard\"\n   \
+          \   }\n    },\n    {\n      \"type\": \"metric\",\n      \"x\": 0,\n   \
+          \   \"y\": 2,\n      \"width\": 12,\n      \"height\": 6,\n      \"properties\"\
+          : {\n        \"metrics\": [\n          [ \"AWS/ApiGateway\", \"Count\",\
+          \ \"ApiId\", \"${PagamentosHttpApi}\", { \"stat\": \"Sum\", \"label\": \"\
+          Requests\" } ],\n          [ \".\", \"4xx\", \".\", \".\", { \"stat\": \"\
+          Sum\", \"label\": \"4XX errors\" } ],\n          [ \".\", \"5xx\", \".\"\
+          , \".\", { \"stat\": \"Sum\", \"label\": \"5XX errors\" } ]\n        ],\n\
+          \        \"view\": \"timeSeries\",\n        \"stacked\": false,\n      \
+          \  \"region\": \"${AWS::Region}\",\n        \"title\": \"API Gateway requests\
+          \ and errors\",\n        \"period\": 300\n      }\n    },\n    {\n     \
+          \ \"type\": \"metric\",\n      \"x\": 12,\n      \"y\": 2,\n      \"width\"\
+          : 12,\n      \"height\": 6,\n      \"properties\": {\n        \"metrics\"\
+          : [\n          [ \"AWS/ApiGateway\", \"Latency\", \"ApiId\", \"${PagamentosHttpApi}\"\
+          , { \"stat\": \"Average\", \"label\": \"Average latency\" } ],\n       \
+          \   [ \".\", \".\", \".\", \".\", { \"stat\": \"p95\", \"label\": \"p95\
+          \ latency\" } ]\n        ],\n        \"view\": \"timeSeries\",\n       \
+          \ \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n       \
+          \ \"title\": \"API Gateway latency\",\n        \"period\": 300\n      }\n\
+          \    },\n    {\n      \"type\": \"metric\",\n      \"x\": 0,\n      \"y\"\
+          : 8,\n      \"width\": 12,\n      \"height\": 6,\n      \"properties\":\
+          \ {\n        \"metrics\": [\n          [ \"AWS/Lambda\", \"Invocations\"\
+          , \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\",\
+          \ \"label\": \"Read\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Create\" } ],\n          [ \".\", \"\
+          .\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\", \"label\"\
+          : \"Pagar\" } ],\n          [ \".\", \".\", \".\", \"${DeletePagamentoFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Delete\" } ]\n        ],\n        \"\
+          view\": \"timeSeries\",\n        \"stacked\": false,\n        \"region\"\
+          : \"${AWS::Region}\",\n        \"title\": \"Lambda invocations\",\n    \
+          \    \"period\": 300\n      }\n    },\n    {\n      \"type\": \"metric\"\
+          ,\n      \"x\": 12,\n      \"y\": 8,\n      \"width\": 12,\n      \"height\"\
+          : 6,\n      \"properties\": {\n        \"metrics\": [\n          [ \"AWS/Lambda\"\
+          , \"Errors\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
+          : \"Sum\", \"label\": \"Read errors\" } ],\n          [ \".\", \".\", \"\
+          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"\
+          Create errors\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Pagar errors\" } ],\n          [ \"\
+          .\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\",\
+          \ \"label\": \"Delete errors\" } ],\n          [ \".\", \"Throttles\", \"\
+          .\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\", \"label\": \"Read\
+          \ throttles\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Create throttles\" } ],\n          [\
+          \ \".\", \".\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\"\
+          , \"label\": \"Pagar throttles\" } ],\n          [ \".\", \".\", \".\",\
+          \ \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"Delete\
+          \ throttles\" } ]\n        ],\n        \"view\": \"timeSeries\",\n     \
+          \   \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n     \
+          \   \"title\": \"Lambda errors and throttles\",\n        \"period\": 300\n\
+          \      }\n    },\n    {\n      \"type\": \"metric\",\n      \"x\": 0,\n\
+          \      \"y\": 14,\n      \"width\": 12,\n      \"height\": 6,\n      \"\
+          properties\": {\n        \"metrics\": [\n          [ \"AWS/Lambda\", \"\
+          Duration\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
+          : \"Average\", \"label\": \"Read avg\" } ],\n          [ \".\", \".\", \"\
+          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Average\", \"label\"\
+          : \"Create avg\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
+          , { \"stat\": \"Average\", \"label\": \"Pagar avg\" } ],\n          [ \"\
+          .\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Average\"\
+          , \"label\": \"Delete avg\" } ]\n        ],\n        \"view\": \"timeSeries\"\
+          ,\n        \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n\
+          \        \"title\": \"Lambda average duration\",\n        \"period\": 300\n\
+          \      }\n    },\n    {\n      \"type\": \"metric\",\n      \"x\": 12,\n\
+          \      \"y\": 14,\n      \"width\": 12,\n      \"height\": 6,\n      \"\
+          properties\": {\n        \"metrics\": [\n          [ \"AWS/DynamoDB\", \"\
+          ConsumedReadCapacityUnits\", \"TableName\", \"${PagamentosTable}\", { \"\
+          stat\": \"Sum\", \"label\": \"Read capacity\" } ],\n          [ \".\", \"\
+          ConsumedWriteCapacityUnits\", \".\", \".\", { \"stat\": \"Sum\", \"label\"\
+          : \"Write capacity\" } ],\n          [ \".\", \"ThrottledRequests\", \"\
+          .\", \".\", { \"stat\": \"Sum\", \"label\": \"Throttled requests\" } ]\n\
+          \        ],\n        \"view\": \"timeSeries\",\n        \"stacked\": false,\n\
+          \        \"region\": \"${AWS::Region}\",\n        \"title\": \"DynamoDB\
+          \ capacity and throttles\",\n        \"period\": 300\n      }\n    }\n \
+          \ ]\n}\n"
+  PagamentosAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName:
+        Fn::Sub: ${AWS::StackName}-alarms
+      Subscription:
+      - Protocol: email
+        Endpoint:
+          Ref: AlarmNotificationEmail
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Sub: ${AWS::StackName}-api-gateway-5xx
+      AlarmDescription: API Gateway returned 5XX errors
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+      - Name: ApiId
+        Value:
+          Ref: PagamentosHttpApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: PagamentosAlarmTopic
+  ApiGatewayHighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Sub: ${AWS::StackName}-api-gateway-high-latency
+      AlarmDescription: API Gateway average latency is high
+      Namespace: AWS/ApiGateway
+      MetricName: Latency
+      Dimensions:
+      - Name: ApiId
+        Value:
+          Ref: PagamentosHttpApi
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
+      Threshold: 3000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: PagamentosAlarmTopic
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Sub: ${AWS::StackName}-lambda-errors
+      AlarmDescription: One or more Lambda functions returned errors
+      Metrics:
+      - Id: readErrors
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Errors
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: ReadPagamentosFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: createErrors
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Errors
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: CreatePagamentoFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: pagarErrors
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Errors
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: PagarPagamentosFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: deleteErrors
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Errors
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: DeletePagamentoFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: totalErrors
+        Expression: readErrors + createErrors + pagarErrors + deleteErrors
+        Label: Total Lambda errors
+        ReturnData: true
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: PagamentosAlarmTopic
+  LambdaThrottlesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Sub: ${AWS::StackName}-lambda-throttles
+      AlarmDescription: One or more Lambda functions were throttled
+      Metrics:
+      - Id: readThrottles
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Throttles
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: ReadPagamentosFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: createThrottles
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Throttles
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: CreatePagamentoFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: pagarThrottles
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Throttles
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: PagarPagamentosFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: deleteThrottles
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Throttles
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: DeletePagamentoFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
+      - Id: totalThrottles
+        Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles
+        Label: Total Lambda throttles
+        ReturnData: true
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: PagamentosAlarmTopic
+  DynamoDbThrottledRequestsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:
+        Fn::Sub: ${AWS::StackName}-dynamodb-throttled-requests
+      AlarmDescription: DynamoDB table has throttled requests
+      Namespace: AWS/DynamoDB
+      MetricName: ThrottledRequests
+      Dimensions:
+      - Name: TableName
+        Value:
+          Ref: PagamentosTable
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: PagamentosAlarmTopic
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL
     Value:
       Fn::Sub: https://${PagamentosHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID
+    Value:
+      Ref: PagamentosUserPool
+  CognitoUserPoolClientId:
+    Description: Cognito App Client ID
+    Value:
+      Ref: PagamentosUserPoolClient
+  CognitoHostedUiDomain:
+    Description: Cognito Hosted UI Domain
+    Value:
+      Fn::Sub: https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com
+  CognitoRegion:
+    Description: AWS Region for Cognito
+    Value:
+      Ref: AWS::Region
+  CloudWatchDashboardName:
+    Description: CloudWatch Dashboard name
+    Value:
+      Ref: PagamentosCloudWatchDashboard
+  AlarmTopicArn:
+    Description: SNS Topic ARN for CloudWatch alarms
+    Value:
+      Ref: PagamentosAlarmTopic

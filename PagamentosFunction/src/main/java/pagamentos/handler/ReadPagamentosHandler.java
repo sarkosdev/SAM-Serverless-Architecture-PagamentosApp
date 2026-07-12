@@ -42,7 +42,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
 
             if ("/pagamentos".equals(path)) {
 
-                APIGatewayV2HTTPResponse response = ApiResponse.json(201, service.listPagamentos());
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentos());
 
                 // CloudWatch Logs
                 DataLogger.info(
