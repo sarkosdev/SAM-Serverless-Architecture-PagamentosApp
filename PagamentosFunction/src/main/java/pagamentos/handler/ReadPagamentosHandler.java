@@ -35,6 +35,14 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
             String method = request.getRequestContext().getHttp().getMethod();
             String path = request.getRawPath();
 
+            //testing
+            String userName = "";
+            var authorizer = request.getRequestContext().getAuthorizer();
+            if(authorizer != null && authorizer.getJwt() != null) {
+                Map<String, String> claims = authorizer.getJwt().getClaims();
+                userName = claims.get("username");
+            }
+            //testing
 
             if (!"GET".equalsIgnoreCase(method)) {
                 return ApiResponse.json(405, Map.of("error", "Method not allowed"));
@@ -42,7 +50,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
 
             if ("/pagamentos".equals(path)) {
 
-                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentos());
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentos(userName));
 
                 // CloudWatch Logs
                 DataLogger.info(

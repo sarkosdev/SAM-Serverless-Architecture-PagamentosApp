@@ -20,17 +20,18 @@ public class PagamentoService {
     }
 
     // Create 'Pagamento' Entry logic method
-    public Map<String, Object> createPagamento(CreatePagamentoRequest request) {
+    public Map<String, Object> createPagamento(CreatePagamentoRequest request, String userName) {
         if (request == null) throw new IllegalArgumentException("Request body is required");
         if (request.processNum() == null || request.processNum().isBlank()) throw new IllegalArgumentException("processNum is required");
         if (request.processValue() == null || request.processValue().isBlank()) throw new IllegalArgumentException("processValue is required");
-
+        if(userName.isEmpty()) throw new IllegalArgumentException("userName is required");
 
         String id = UUID.randomUUID().toString();
         String createdAt = Instant.now().toString();
 
         Map<String, AttributeValue> item = Map.of(
                 "id", AttributeValue.fromS(id),
+                "userName", AttributeValue.fromS(userName),
                 "processNum", AttributeValue.fromS(request.processNum()),
                 "processValue", AttributeValue.fromS(request.processValue()),
                 "status", AttributeValue.fromS("PENDING"),
@@ -41,6 +42,7 @@ public class PagamentoService {
 
         return Map.of(
                 "id", id,
+                "userName", userName,
                 "processNum", request.processNum(),
                 "processValue", request.processValue(),
                 "status", "PENDING",
@@ -49,13 +51,17 @@ public class PagamentoService {
     }
 
     // List 'Pagamento' Entries from DynamoDB Table logic method
-    public List<Map<String, Object>> listPagamentos() {
+    public List<Map<String, Object>> listPagamentos(String userName) {
+        if(userName.isEmpty()) throw new IllegalArgumentException("userName is required");
+
         return repository.findAll()
                 .stream()
+                .filter(pagamento -> pagamento.get("userName").equals(userName))
                 .map(this::toResponse)
                 .toList();
     }
 
+    // Averiguar se pode ser eliminado
     // Get 'Pagamento' Entry from DynamoDB Table logic method
     public Map<String, Object> getPagamento(String id) {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("id is required");
@@ -85,7 +91,7 @@ public class PagamentoService {
     }
 
 
-    
+
     // Pagar Processos functionality logic method
     public Map<String, Object> pagarProcessos(List<String> listaProcess) {
         if (listaProcess == null || listaProcess.isEmpty()) {

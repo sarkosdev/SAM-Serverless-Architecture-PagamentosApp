@@ -39,22 +39,22 @@ public class CreatePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
         // CloudWatch Logs
         DataLogger.info(context, request, operation, "Request received", Map.of());
 
-        //testng 
-        var authorizer = request.getRequestContext().getAuthorizer();
-        if(authorizer != null && authorizer.getJwt() != null) {
-            Map<String, String> claims = authorizer.getJwt().getClaims();
-            System.out.println("username1 :: " + claims.get("sub"));
-            System.out.println("username2 :: " + claims.get("username"));
-            System.out.println("username3 :: " + claims.get("cognito::username"));
-        }
-        //testng
+       
 
 
         try {
             CreatePagamentoRequest body = objectMapper.readValue(request.getBody(), CreatePagamentoRequest.class);
             
+            //testng 
+            String userName = "";
+            var authorizer = request.getRequestContext().getAuthorizer();
+            if(authorizer != null && authorizer.getJwt() != null) {
+                Map<String, String> claims = authorizer.getJwt().getClaims();
+                userName = claims.get("username");
+            }
+            //testng
             
-            APIGatewayV2HTTPResponse response = ApiResponse.json(201, service.createPagamento(body));
+            APIGatewayV2HTTPResponse response = ApiResponse.json(201, service.createPagamento(body, userName));
 
             // CloudWatch Logs
             DataLogger.info(
