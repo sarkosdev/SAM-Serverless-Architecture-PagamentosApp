@@ -54,9 +54,8 @@ public class PagamentoService {
     public List<Map<String, Object>> listPagamentos(String userName) {
         if(userName.isEmpty()) throw new IllegalArgumentException("userName is required");
 
-        return repository.findAll()
+        return repository.findAll(userName)
                 .stream()
-                .filter(pagamento -> pagamento.get("userName").equals(userName))
                 .map(this::toResponse)
                 .toList();
     }
