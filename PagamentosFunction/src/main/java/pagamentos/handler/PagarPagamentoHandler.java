@@ -34,9 +34,22 @@ public class PagarPagamentoHandler implements RequestHandler<APIGatewayV2HTTPEve
         final String operation = "PAGAR_PAGAMENTO";
         
         try {
+
+            
+
             PagarPagamentosRequest body = objectMapper.readValue(request.getBody(), PagarPagamentosRequest.class);
             
-            APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.pagarProcessos(body.listaProcess()));
+            //testing
+            String userName = "";
+            var authorizer = request.getRequestContext().getAuthorizer();
+            if(authorizer != null && authorizer.getJwt() != null) {
+                Map<String, String> claims = authorizer.getJwt().getClaims();
+                userName = claims.get("username");
+            }
+            //testing
+
+
+            APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.pagarProcessos(body.listaProcess(), userName));
             
             // CloudWatch Logs
             DataLogger.info(

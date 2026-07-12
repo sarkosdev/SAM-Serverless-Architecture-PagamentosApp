@@ -85,15 +85,17 @@ public class PagamentoRepository {
 
 
     // Find first 'Pagamento' entry in DynamoDB 'Pagamentos' Tabel
-    public Map<String, AttributeValue> findFirstByProcessNum(String processNum) {
+    public Map<String, AttributeValue> findFirstByProcessNum(String processNum, String userName) {
         ScanResponse response = dynamoDb.scan(ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("#processNum = :processNum")
+                .filterExpression("#processNum = :processNum AND #userName = :userName")
                 .expressionAttributeNames(Map.of(
-                        "#processNum", "processNum"
+                        "#processNum", "processNum",
+                        "#userName", "userName"
                 ))
                 .expressionAttributeValues(Map.of(
-                        ":processNum", AttributeValue.fromS(processNum)
+                        ":processNum", AttributeValue.fromS(processNum),
+                        ":userName", AttributeValue.fromS(userName)
                 ))
                 .build());
 

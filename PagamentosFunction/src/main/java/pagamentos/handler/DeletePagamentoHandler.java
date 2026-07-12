@@ -34,13 +34,22 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
             String method = request.getRequestContext().getHttp().getMethod();
             String path = request.getRawPath();
 
+            //testng 
+            String userName = "";
+            var authorizer = request.getRequestContext().getAuthorizer();
+            if(authorizer != null && authorizer.getJwt() != null) {
+                Map<String, String> claims = authorizer.getJwt().getClaims();
+                userName = claims.get("username");
+            }
+            //testng
+
             if (!"DELETE".equalsIgnoreCase(method)) {
                 return ApiResponse.json(405, Map.of("error", "Method not allowed"));
             }
 
             if (path.startsWith("/pagamentos/process/")) {
                 String processNum = path.substring("/pagamentos/process/".length());
-                boolean deleted = service.deletePagamentoByProcessNum(processNum);
+                boolean deleted = service.deletePagamentoByProcessNum(processNum, userName);
 
                 if (!deleted) {
                     APIGatewayV2HTTPResponse response = ApiResponse.json(404, Map.of(

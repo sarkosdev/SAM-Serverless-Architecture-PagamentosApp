@@ -92,9 +92,13 @@ public class PagamentoService {
 
 
     // Pagar Processos functionality logic method
-    public Map<String, Object> pagarProcessos(List<String> listaProcess) {
+    public Map<String, Object> pagarProcessos(List<String> listaProcess, String userName) {
         if (listaProcess == null || listaProcess.isEmpty()) {
             throw new IllegalArgumentException("listaProcess is required");
+        }
+
+        if(userName == null || userName.isEmpty()) {
+            throw new IllegalArgumentException("userName is required");
         }
 
         BigDecimal total = BigDecimal.ZERO;
@@ -108,7 +112,7 @@ public class PagamentoService {
                 continue;
             }
 
-            Map<String, AttributeValue> item = repository.findFirstByProcessNum(processNum);
+            Map<String, AttributeValue> item = repository.findFirstByProcessNum(processNum, userName);
 
             if (item == null) {
                 notFound.add(processNum);
@@ -162,12 +166,16 @@ public class PagamentoService {
 
 
     // Delete 'Pagamento' from 'Pagamento' Table in DynamoDB by 'processNum'
-    public boolean deletePagamentoByProcessNum(String processNum) {
+    public boolean deletePagamentoByProcessNum(String processNum, String userName) {
         if (processNum == null || processNum.isBlank()) {
             throw new IllegalArgumentException("processNum is required");
         }
 
-        Map<String, AttributeValue> item = repository.findFirstByProcessNum(processNum);
+        if(userName == null || userName.isEmpty()) {
+            throw new IllegalArgumentException("userName is required");
+        }
+
+        Map<String, AttributeValue> item = repository.findFirstByProcessNum(processNum, userName);
 
         if (item == null) return false;
 
