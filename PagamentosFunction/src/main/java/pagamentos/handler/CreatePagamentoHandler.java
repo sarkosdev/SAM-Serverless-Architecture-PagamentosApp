@@ -54,7 +54,7 @@ public class CreatePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
             }
             //testng
             
-            APIGatewayV2HTTPResponse response = ApiResponse.json(201, service.createPagamento(body, userName));
+            APIGatewayV2HTTPResponse response = ApiResponse.json(201, service.createProcess(body, userName));
 
             // CloudWatch Logs
             DataLogger.info(

@@ -92,7 +92,7 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
 
             if (path.startsWith("/pagamentos/")) {
                 String id = path.substring("/pagamentos/".length());
-                boolean deleted = service.deletePagamentoById(id);
+                boolean deleted = service.deleteProcessoById(id);
 
                 if (!deleted) {
                     APIGatewayV2HTTPResponse response = ApiResponse.json(404, Map.of(

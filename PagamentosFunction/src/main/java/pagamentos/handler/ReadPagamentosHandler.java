@@ -50,7 +50,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
 
             if ("/pagamentos".equals(path)) {
 
-                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentos(userName));
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listProcessos(userName));
 
                 // CloudWatch Logs
                 DataLogger.info(
@@ -70,7 +70,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
             if (path.startsWith("/pagamentos/status/")) {
                 String status = path.substring("/pagamentos/status/".length());
                 
-                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentosByStatus(status, userName));
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listProcessosByStatus(status, userName));
                 
                 // CloudWatch Logs
                 DataLogger.info(
@@ -90,7 +90,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
 
             if (path.startsWith("/pagamentos/")) {
                 String id = path.substring("/pagamentos/".length());
-                Map<String, Object> pagamento = service.getPagamento(id);
+                Map<String, Object> pagamento = service.getProcesso(id);
 
                 if (pagamento == null) {
                     return ApiResponse.json(404, Map.of("error", "Pagamento not found", "id", id));

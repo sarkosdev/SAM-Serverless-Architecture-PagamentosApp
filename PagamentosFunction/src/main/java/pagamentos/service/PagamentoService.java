@@ -3,6 +3,7 @@ package pagamentos.service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,7 +21,7 @@ public class PagamentoService {
     }
 
     // Create 'Pagamento' Entry logic method
-    public Map<String, Object> createPagamento(CreatePagamentoRequest request, String userName) {
+    public Map<String, Object> createProcess(CreatePagamentoRequest request, String userName) {
         if (request == null) throw new IllegalArgumentException("Request body is required");
         if (request.processNum() == null || request.processNum().isBlank()) throw new IllegalArgumentException("processNum is required");
         if (request.processValue() == null || request.processValue().isBlank()) throw new IllegalArgumentException("processValue is required");
@@ -51,7 +52,7 @@ public class PagamentoService {
     }
 
     // List 'Pagamento' Entries from DynamoDB Table logic method
-    public List<Map<String, Object>> listPagamentos(String userName) {
+    public List<Map<String, Object>> listProcessos(String userName) {
         if(userName.isEmpty()) throw new IllegalArgumentException("userName is required");
 
         return repository.findAll(userName)
@@ -62,7 +63,7 @@ public class PagamentoService {
 
     // Averiguar se pode ser eliminado
     // Get 'Pagamento' Entry from DynamoDB Table logic method
-    public Map<String, Object> getPagamento(String id) {
+    public Map<String, Object> getProcesso(String id) {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("id is required");
 
         Map<String, AttributeValue> item = repository.findById(id);
@@ -74,7 +75,7 @@ public class PagamentoService {
 
 
     // List 'Pagamento' entries from 'Pagamentos' Table logic method with status PENDING or PAGO logic method
-    public List<Map<String, Object>> listPagamentosByStatus(String status, String userName) {
+    public List<Map<String, Object>> listProcessosByStatus(String status, String userName) {
         if (status == null || status.isBlank()) throw new IllegalArgumentException("status is required");
         if (userName == null || userName.isEmpty()) throw new IllegalArgumentException("userName is required");
         
@@ -104,7 +105,7 @@ public class PagamentoService {
 
         BigDecimal total = BigDecimal.ZERO;
 
-        List<Map<String, Object>> pagamentosPagos = new ArrayList<>();
+        List<Map<String, AttributeValue>> processosPagos = new ArrayList<>();
         List<String> notFound = new ArrayList<>();
         List<String> alreadyPaid = new ArrayList<>();
 
@@ -138,15 +139,21 @@ public class PagamentoService {
 
             repository.updateStatus(id, "PAGO");
 
-            pagamentosPagos.add(Map.of(
-                    "processNum", item.get("processNum").s(),
-                    "processValue", processValue
+            
+            processosPagos.add(Map.of(
+                    "processNum", AttributeValue.builder().s(item.get("processNum").s()).build(),
+                    "processValue", AttributeValue.builder().n(processValue).build()
             ));
         }
 
+        
+        // Now we save the 'Pagamentos Pagos' inside table to use later for 'Historico Pagamentos'
+        buildPagamentoAndSaveIt(processosPagos, total, userName);
+
+
         return Map.of(
                 "total", total.toString(),
-                "pagamentosPagos", pagamentosPagos,
+                "pagamentosPagos", processosPagos,
                 "alreadyPaid", alreadyPaid,
                 "notFound", notFound
         );
@@ -154,7 +161,7 @@ public class PagamentoService {
 
     
     // Delete 'Pagamento' by Id
-    public boolean deletePagamentoById(String id) {
+    public boolean deleteProcessoById(String id) {
         if (id == null || id.isBlank()) throw new IllegalArgumentException("id is required");
 
         Map<String, AttributeValue> item = repository.findById(id);
@@ -195,4 +202,33 @@ public class PagamentoService {
                 "createdAt", item.get("createdAt").s()
         );
     }
+
+
+    // Build 'Pagamento' that will be saved in our DynamoDB Table
+    // Call repository with save method to perform this operation
+    private void buildPagamentoAndSaveIt(List<Map<String, AttributeValue>> processosPagos, BigDecimal valorTotal, String userName){
+        final String pagamentoId = UUID.randomUUID().toString();
+        final String createdAt = Instant.now().toString();
+        
+        // Complete Map that will be saved in our Table
+        Map<String, AttributeValue> item = new HashMap<>();
+        item.put("PK", AttributeValue.builder().s("USER#" + userName).build());
+        item.put("SK", AttributeValue.builder().s("PAGAMENTO#" + createdAt + "#" + pagamentoId).build());
+        item.put("type", AttributeValue.builder().s("PAGAMENTO").build());
+        item.put("userName", AttributeValue.builder().s(userName).build());
+        item.put("createdAt", AttributeValue.builder().s(createdAt).build());
+        item.put("valorTotal", AttributeValue.builder().n(valorTotal.toString()).build());
+        item.put("processosPagos", AttributeValue.builder()
+                .l(processosPagos.stream()
+                        .map(processo -> AttributeValue.builder().m(processo).build())
+                        .toList())
+                .build());
+
+        this.repository.save(item);
+                
+    }
+
+
+
+
 }
