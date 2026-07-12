@@ -213,8 +213,6 @@ public class PagamentoService {
         // Complete Map that will be saved in our Table
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("id", AttributeValue.builder().s(pagamentoId).build());
-        item.put("PK", AttributeValue.builder().s("USER#" + userName).build());
-        item.put("SK", AttributeValue.builder().s("PAGAMENTO#" + createdAt + "#" + pagamentoId).build());
         item.put("type", AttributeValue.builder().s("PAGAMENTO").build());
         item.put("userName", AttributeValue.builder().s(userName).build());
         item.put("createdAt", AttributeValue.builder().s(createdAt).build());
