@@ -68,15 +68,17 @@ public class PagamentoRepository {
 
 
     // Find 'Pagamento' by STATUS in DynamoDB 'Pagamentos' Tabel
-    public List<Map<String, AttributeValue>> findByStatus(String status) {
+    public List<Map<String, AttributeValue>> findByStatus(String status, String userName) {
         ScanResponse response = dynamoDb.scan(ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("#status = :statusValue")
+                .filterExpression("#status = :statusValue AND #userName = :userName")
                 .expressionAttributeNames(Map.of(
-                        "#status", "status"
+                        "#status", "status",
+                        "#userName", "userName"
                 ))
                 .expressionAttributeValues(Map.of(
-                        ":statusValue", AttributeValue.fromS(status)
+                        ":statusValue", AttributeValue.fromS(status),
+                        ":userName", AttributeValue.fromS(userName)
                 ))
                 .build());
 

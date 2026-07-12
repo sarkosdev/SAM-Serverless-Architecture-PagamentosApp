@@ -70,7 +70,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
             if (path.startsWith("/pagamentos/status/")) {
                 String status = path.substring("/pagamentos/status/".length());
                 
-                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentosByStatus(status));
+                APIGatewayV2HTTPResponse response = ApiResponse.json(200, service.listPagamentosByStatus(status, userName));
                 
                 // CloudWatch Logs
                 DataLogger.info(

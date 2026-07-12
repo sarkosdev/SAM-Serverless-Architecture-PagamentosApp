@@ -74,16 +74,17 @@ public class PagamentoService {
 
 
     // List 'Pagamento' entries from 'Pagamentos' Table logic method with status PENDING or PAGO logic method
-    public List<Map<String, Object>> listPagamentosByStatus(String status) {
+    public List<Map<String, Object>> listPagamentosByStatus(String status, String userName) {
         if (status == null || status.isBlank()) throw new IllegalArgumentException("status is required");
-
-        String normalizedStatus = status.toUpperCase();
+        if (userName == null || userName.isEmpty()) throw new IllegalArgumentException("userName is required");
+        
+            String normalizedStatus = status.toUpperCase();
 
         if (!normalizedStatus.equals("PENDING") && !normalizedStatus.equals("PAGO")) {
             throw new IllegalArgumentException("Invalid status. Allowed values: 'PENDING' or 'PAGO'");
         }
 
-        return repository.findByStatus(normalizedStatus)
+        return repository.findByStatus(normalizedStatus, userName)
                 .stream()
                 .map(this::toResponse)
                 .toList();
