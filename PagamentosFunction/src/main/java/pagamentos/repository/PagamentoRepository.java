@@ -44,7 +44,7 @@ public class PagamentoRepository {
 
         ScanResponse response = dynamoDb.scan(ScanRequest.builder()
                 .tableName(tableName)
-                .filterExpression("userName = :userName AND type = :type")
+                .filterExpression("#userName = :userName AND #type = :type")
                 .expressionAttributeValues(Map.of(
                         ":userName", AttributeValue.builder().s(userName).build(),
                         ":type", AttributeValue.builder().s(type).build()
