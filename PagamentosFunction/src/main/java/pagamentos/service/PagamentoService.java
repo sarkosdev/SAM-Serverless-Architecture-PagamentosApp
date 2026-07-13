@@ -59,7 +59,7 @@ public class PagamentoService {
 
         return repository.findAll(userName)
                 .stream()
-                .map(this::toResponse)
+                .map(this::toResponseProcess)
                 .toList();
     }
 
@@ -72,7 +72,7 @@ public class PagamentoService {
 
         if (item == null) return null;
 
-        return toResponse(item);
+        return toResponseProcess(item);
     }
 
 
@@ -89,7 +89,7 @@ public class PagamentoService {
 
         return repository.findByStatus(normalizedStatus, userName)
                 .stream()
-                .map(this::toResponse)
+                .map(this::toResponseProcess)
                 .toList();
     }
 
@@ -195,13 +195,15 @@ public class PagamentoService {
     }
 
 
-    private Map<String, Object> toResponse(Map<String, AttributeValue> item) {
+    private Map<String, Object> toResponseProcess(Map<String, AttributeValue> item) {
         return Map.of(
                 "id", item.get("id").s(),
                 "processNum", item.get("processNum").s(),
                 "processValue", item.get("processValue").s(),
                 "status", item.get("status").s(),
-                "createdAt", item.get("createdAt").s()
+                "createdAt", item.get("createdAt").s(),
+                "userName", item.get("userName").s(),
+                "type", item.get("type").s()
         );
     }
 
