@@ -57,7 +57,7 @@ public class PagamentoService {
     public List<Map<String, Object>> listProcessos(String userName) {
         if(userName.isEmpty()) throw new IllegalArgumentException("userName is required");
 
-        return repository.findAll(userName)
+        return repository.findAllProcesso(userName)
                 .stream()
                 .map(this::toResponseProcess)
                 .toList();

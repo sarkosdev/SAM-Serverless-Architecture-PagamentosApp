@@ -38,9 +38,9 @@ public class PagamentoRepository {
     }
 
     // Find all 'Pagamento' in DynamoDB 'Pagamentos' Tabel
-    public List<Map<String, AttributeValue>> findAll(String userName) {
+    public List<Map<String, AttributeValue>> findAllProcesso(String userName) {
 
-        final String type = "PAGAMENTO";
+        final String type = "PROCESSO";
 
         ScanResponse response = dynamoDb.scan(ScanRequest.builder()
                 .tableName(tableName)
