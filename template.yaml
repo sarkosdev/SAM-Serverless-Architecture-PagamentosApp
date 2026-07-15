@@ -251,6 +251,26 @@ Resources:
             ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
+            
+  # AWS Lambda (Historico Function)
+  HistoricoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HistoricoFunction
+      Handler: historico.handler.HistoricoHandler::handleRequest
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PagamentosTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PagamentosTable
+      Events:
+        ListHistoricoByUser:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PagamentosHttpApi
+            Path: /historico
+            Method: GET
 
   # AWS CloudWatch - API Gateway Access Logs
   PagamentosApiAccessLogs:
