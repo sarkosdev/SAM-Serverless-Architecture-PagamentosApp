@@ -263,6 +263,29 @@ Resources:
             Method: DELETE
     Metadata:
       SamResourceId: DeletePagamentoFunction
+  HistoricoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HistoricoFunction
+      Handler: historico.handler.HistoricoHandler::handleRequest
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: PagamentosTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: PagamentosTable
+      Events:
+        ListHistoricoByUser:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: PagamentosHttpApi
+            Path: /historico
+            Method: GET
+    Metadata:
+      SamResourceId: HistoricoFunction
   PagamentosApiAccessLogs:
     Type: AWS::Logs::LogGroup
     DeletionPolicy: Delete

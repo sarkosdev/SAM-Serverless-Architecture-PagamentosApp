@@ -5,9 +5,9 @@ codeuri = "C:\\AWS-Directory\\SAM-Serverless-Architecture-PagamentosApp\\Pagamen
 runtime = "java25"
 architecture = "x86_64"
 handler = "pagamentos.PagamentosHandler::handleRequest"
-source_hash = "50a4ac0ca2a4768b9c11a475b2f12227ace8d269da3d7e755f97a60e235631c0"
+source_hash = "5e4029a78a8f6f191cae14cb727cba2e543eeecf923a0fb98ea82601656bee77"
 manifest_hash = ""
 packagetype = "Zip"
-functions = ["ReadPagamentosFunction", "CreatePagamentoFunction", "PagarPagamentosFunction", "DeletePagamentoFunction"]
+functions = ["ReadPagamentosFunction", "CreatePagamentoFunction", "PagarPagamentosFunction", "DeletePagamentoFunction", "HistoricoFunction"]
 
 [layer_build_definitions]

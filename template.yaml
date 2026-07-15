@@ -256,7 +256,7 @@ Resources:
   HistoricoFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: HistoricoFunction
+      CodeUri: PagamentosFunction
       Handler: historico.handler.HistoricoHandler::handleRequest
       Environment:
         Variables:
