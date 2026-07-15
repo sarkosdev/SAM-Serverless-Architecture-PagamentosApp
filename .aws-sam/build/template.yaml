@@ -330,52 +330,57 @@ Resources:
           , { \"stat\": \"Sum\", \"label\": \"Create\" } ],\n          [ \".\", \"\
           .\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\", \"label\"\
           : \"Pagar\" } ],\n          [ \".\", \".\", \".\", \"${DeletePagamentoFunction}\"\
-          , { \"stat\": \"Sum\", \"label\": \"Delete\" } ]\n        ],\n        \"\
-          view\": \"timeSeries\",\n        \"stacked\": false,\n        \"region\"\
-          : \"${AWS::Region}\",\n        \"title\": \"Lambda invocations\",\n    \
-          \    \"period\": 300\n      }\n    },\n    {\n      \"type\": \"metric\"\
-          ,\n      \"x\": 12,\n      \"y\": 8,\n      \"width\": 12,\n      \"height\"\
-          : 6,\n      \"properties\": {\n        \"metrics\": [\n          [ \"AWS/Lambda\"\
-          , \"Errors\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
-          : \"Sum\", \"label\": \"Read errors\" } ],\n          [ \".\", \".\", \"\
-          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"\
-          Create errors\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
-          , { \"stat\": \"Sum\", \"label\": \"Pagar errors\" } ],\n          [ \"\
-          .\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\",\
-          \ \"label\": \"Delete errors\" } ],\n          [ \".\", \"Throttles\", \"\
-          .\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\", \"label\": \"Read\
-          \ throttles\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Delete\" } ],\n          [ \".\", \"\
+          .\", \".\", \"${HistoricoFunction}\",  {\"stat\": \"Sum\", \"label\": \"\
+          Historico\" } ]\n        ],\n        \"view\": \"timeSeries\",\n       \
+          \ \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n       \
+          \ \"title\": \"Lambda invocations\",\n        \"period\": 300\n      }\n\
+          \    },\n    {\n      \"type\": \"metric\",\n      \"x\": 12,\n      \"\
+          y\": 8,\n      \"width\": 12,\n      \"height\": 6,\n      \"properties\"\
+          : {\n        \"metrics\": [\n          [ \"AWS/Lambda\", \"Errors\", \"\
+          FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\", \"label\"\
+          : \"Read errors\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Create errors\" } ],\n          [ \"\
+          .\", \".\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\",\
+          \ \"label\": \"Pagar errors\" } ],\n          [ \".\", \".\", \".\", \"\
+          ${DeletePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"Delete errors\"\
+          \ } ],\n          [ \".\", \".\", \".\", \"${HistoricoFunction}\",  {\"\
+          stat\": \"Sum\", \"label\": \"Historico\" } ],\n          [ \".\", \"Throttles\"\
+          , \".\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\", \"label\":\
+          \ \"Read throttles\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
           , { \"stat\": \"Sum\", \"label\": \"Create throttles\" } ],\n          [\
           \ \".\", \".\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\"\
           , \"label\": \"Pagar throttles\" } ],\n          [ \".\", \".\", \".\",\
           \ \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"Delete\
-          \ throttles\" } ]\n        ],\n        \"view\": \"timeSeries\",\n     \
-          \   \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n     \
-          \   \"title\": \"Lambda errors and throttles\",\n        \"period\": 300\n\
-          \      }\n    },\n    {\n      \"type\": \"metric\",\n      \"x\": 0,\n\
-          \      \"y\": 14,\n      \"width\": 12,\n      \"height\": 6,\n      \"\
-          properties\": {\n        \"metrics\": [\n          [ \"AWS/Lambda\", \"\
-          Duration\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
+          \ throttles\" } ],\n          [ \".\", \".\", \".\", \"${HistoricoFunction}\"\
+          ,  {\"stat\": \"Sum\", \"label\": \"Historico\" } ]\n        ],\n      \
+          \  \"view\": \"timeSeries\",\n        \"stacked\": false,\n        \"region\"\
+          : \"${AWS::Region}\",\n        \"title\": \"Lambda errors and throttles\"\
+          ,\n        \"period\": 300\n      }\n    },\n    {\n      \"type\": \"metric\"\
+          ,\n      \"x\": 0,\n      \"y\": 14,\n      \"width\": 12,\n      \"height\"\
+          : 6,\n      \"properties\": {\n        \"metrics\": [\n          [ \"AWS/Lambda\"\
+          , \"Duration\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
           : \"Average\", \"label\": \"Read avg\" } ],\n          [ \".\", \".\", \"\
           .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Average\", \"label\"\
           : \"Create avg\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
           , { \"stat\": \"Average\", \"label\": \"Pagar avg\" } ],\n          [ \"\
           .\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Average\"\
-          , \"label\": \"Delete avg\" } ]\n        ],\n        \"view\": \"timeSeries\"\
+          , \"label\": \"Delete avg\" } ],\n          [ \".\", \".\", \".\", \"${HistoricoFunction}\"\
+          ,  {\"stat\": \"Average\", \"label\": \"Historico avg\" } ]\n        ],\n\
+          \        \"view\": \"timeSeries\",\n        \"stacked\": false,\n      \
+          \  \"region\": \"${AWS::Region}\",\n        \"title\": \"Lambda average\
+          \ duration\",\n        \"period\": 300\n      }\n    },\n    {\n      \"\
+          type\": \"metric\",\n      \"x\": 12,\n      \"y\": 14,\n      \"width\"\
+          : 12,\n      \"height\": 6,\n      \"properties\": {\n        \"metrics\"\
+          : [\n          [ \"AWS/DynamoDB\", \"ConsumedReadCapacityUnits\", \"TableName\"\
+          , \"${PagamentosTable}\", { \"stat\": \"Sum\", \"label\": \"Read capacity\"\
+          \ } ],\n          [ \".\", \"ConsumedWriteCapacityUnits\", \".\", \".\"\
+          , { \"stat\": \"Sum\", \"label\": \"Write capacity\" } ],\n          [ \"\
+          .\", \"ThrottledRequests\", \".\", \".\", { \"stat\": \"Sum\", \"label\"\
+          : \"Throttled requests\" } ]\n        ],\n        \"view\": \"timeSeries\"\
           ,\n        \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n\
-          \        \"title\": \"Lambda average duration\",\n        \"period\": 300\n\
-          \      }\n    },\n    {\n      \"type\": \"metric\",\n      \"x\": 12,\n\
-          \      \"y\": 14,\n      \"width\": 12,\n      \"height\": 6,\n      \"\
-          properties\": {\n        \"metrics\": [\n          [ \"AWS/DynamoDB\", \"\
-          ConsumedReadCapacityUnits\", \"TableName\", \"${PagamentosTable}\", { \"\
-          stat\": \"Sum\", \"label\": \"Read capacity\" } ],\n          [ \".\", \"\
-          ConsumedWriteCapacityUnits\", \".\", \".\", { \"stat\": \"Sum\", \"label\"\
-          : \"Write capacity\" } ],\n          [ \".\", \"ThrottledRequests\", \"\
-          .\", \".\", { \"stat\": \"Sum\", \"label\": \"Throttled requests\" } ]\n\
-          \        ],\n        \"view\": \"timeSeries\",\n        \"stacked\": false,\n\
-          \        \"region\": \"${AWS::Region}\",\n        \"title\": \"DynamoDB\
-          \ capacity and throttles\",\n        \"period\": 300\n      }\n    }\n \
-          \ ]\n}\n"
+          \        \"title\": \"DynamoDB capacity and throttles\",\n        \"period\"\
+          : 300\n      }\n    }\n  ]\n}\n"
   PagamentosAlarmTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -482,8 +487,19 @@ Resources:
           Period: 300
           Stat: Sum
         ReturnData: false
+      - Id: historicoErrors
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Errors
+            Dimensions:
+            - Name: FunctionName
+              Value: HistoricoFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
       - Id: totalErrors
-        Expression: readErrors + createErrors + pagarErrors + deleteErrors
+        Expression: readErrors + createErrors + pagarErrors + deleteErrors + historicoErrors
         Label: Total Lambda errors
         ReturnData: true
       EvaluationPeriods: 1
@@ -548,8 +564,21 @@ Resources:
           Period: 300
           Stat: Sum
         ReturnData: false
+      - Id: historicoThrottles
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Throttles
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: HistoricoFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
       - Id: totalThrottles
         Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles
+          + historicoThrottles
         Label: Total Lambda throttles
         ReturnData: true
       EvaluationPeriods: 1

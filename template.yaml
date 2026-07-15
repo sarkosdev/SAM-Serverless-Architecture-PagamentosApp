@@ -347,7 +347,8 @@ Resources:
                   [ "AWS/Lambda", "Invocations", "FunctionName", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read" } ],
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar" } ],
-                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete" } ]
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete" } ],
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -368,10 +369,12 @@ Resources:
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create errors" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar errors" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete errors" } ],
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ],
                   [ ".", "Throttles", ".", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read throttles" } ],
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create throttles" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar throttles" } ],
-                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete throttles" } ]
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete throttles" } ],
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -391,7 +394,8 @@ Resources:
                   [ "AWS/Lambda", "Duration", "FunctionName", "${ReadPagamentosFunction}", { "stat": "Average", "label": "Read avg" } ],
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Average", "label": "Create avg" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Average", "label": "Pagar avg" } ],
-                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Average", "label": "Delete avg" } ]
+                  [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Average", "label": "Delete avg" } ],
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Average", "label": "Historico avg" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -524,8 +528,19 @@ Resources:
             Period: 300
             Stat: Sum
           ReturnData: false
+        - Id: historicoErrors
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: HistoricoFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
         - Id: totalErrors
-          Expression: readErrors + createErrors + pagarErrors + deleteErrors
+          Expression: readErrors + createErrors + pagarErrors + deleteErrors + historicoErrors
           Label: Total Lambda errors
           ReturnData: true
       EvaluationPeriods: 1
@@ -587,8 +602,19 @@ Resources:
             Period: 300
             Stat: Sum
           ReturnData: false
+        - Id: historicoThrottles
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref HistoricoFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
         - Id: totalThrottles
-          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles
+          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles + historicoThrottles
           Label: Total Lambda throttles
           ReturnData: true
       EvaluationPeriods: 1
