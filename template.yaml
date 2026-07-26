@@ -425,14 +425,14 @@ Resources:
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar errors" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete errors" } ],
                   [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico errors" } ],
-                  [ ".", ".", ".", "${DownloadPdfFunction}", {"stat": "Sum", "label": "Download PDF errors" } ]
+                  [ ".", ".", ".", "${DownloadPdfFunction}", {"stat": "Sum", "label": "Download PDF errors" } ],
+
                   [ ".", "Throttles", ".", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read throttles" } ],
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create throttles" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar throttles" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete throttles" } ],
                   [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico throttles" } ],
-                  [ ".", ".", ".", "${DownloadPdfFunction}",{"stat": "Sum", "label": "Download PDF throttles" } ],
-                  
+                  [ ".", ".", ".", "${DownloadPdfFunction}",{"stat": "Sum", "label": "Download PDF throttles" } ]    
                 ],
                 "view": "timeSeries",
                 "stacked": false,
