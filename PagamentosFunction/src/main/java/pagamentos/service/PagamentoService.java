@@ -55,7 +55,7 @@ public class PagamentoService {
 
         String uniqueKey = buildUniqueKey(ownerId,normalizedProcessNum);
 
-        Map<String, AttributeValue> processoExistente = repository.findFirstByProcessNum(request.processNum(), userName);
+        //Map<String, AttributeValue> processoExistente = repository.findFirstByProcessNum(request.processNum(), userName);
 
         /* 
         if(processoExistente != null) {
