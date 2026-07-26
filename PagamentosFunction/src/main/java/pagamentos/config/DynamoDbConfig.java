@@ -21,16 +21,11 @@ public class DynamoDbConfig {
             region = "eu-west-1";
         }
 
-        DynamoDbClientBuilder builder = DynamoDbClient.builder()
-                .region(Region.of(region));
+        DynamoDbClientBuilder builder = DynamoDbClient.builder().region(Region.of(region));
 
         if (endpoint != null && !endpoint.isBlank()) {
             builder.endpointOverride(URI.create(endpoint));
-            builder.credentialsProvider(
-                    StaticCredentialsProvider.create(
-                            AwsBasicCredentials.create("dummy", "dummy")
-                    )
-            );
+            builder.credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("dummy", "dummy")));
         }
 
         return builder.build();

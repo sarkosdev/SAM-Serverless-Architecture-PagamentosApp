@@ -17,7 +17,7 @@ Parameters:
     Description: Angular application URL
   AlarmNotificationEmail:
     Type: String
-    Description: optic11051997@gmail.com
+    Description: Email address that receives CloudWatch alarm notifications
 
 Globals:
   Function:
@@ -28,23 +28,27 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        DYNAMODB_ENDPOINT: ""
+        DYNAMODB_ENDPOINT: ''
+        S3_ENDPOINT: ''
+        APP_ENV: cloud
+        LOCAL_USERNAME: ''
 
 Resources:
   # AWS ApiGateway HTTP API
   PagamentosHttpApi:
     Type: AWS::Serverless::HttpApi
     Properties:
-      StageName: "$default"
+      StageName: $default
       # Here we define how the logs should look like and where they should be saved for AWS ApiGateway in Cloudwatch
-      AccessLogSettings: 
+      AccessLogSettings:
         DestinationArn: !GetAtt PagamentosApiAccessLogs.Arn
-        Format: '{"requestId": "$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationError":"$context.integrationErrorMessage","authorizerError":"$context.authorizer.error","authorizerPrincipalId":"$context.authorizer.principalId","jwtSubject":"$context.authorizer.claims.sub","requestTimeEpoch":"$context.requestTimeEpoch","responseLatency":"$context.responseLatency","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","jwtUsername":"$context.authorizer.claims.username","userAgent":"$context.identity.userAgent"}'
+        Format: '{"requestId":
+          "$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","path":"$context.path","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationError":"$context.integrationErrorMessage","authorizerError":"$context.authorizer.error","authorizerPrincipalId":"$context.authorizer.principalId","jwtSubject":"$context.authorizer.claims.sub","requestTimeEpoch":"$context.requestTimeEpoch","responseLatency":"$context.responseLatency","integrationStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","jwtUsername":"$context.authorizer.claims.username","userAgent":"$context.identity.userAgent"}'
 
       DefinitionBody:
-        openapi: '3.0.1'
+        openapi: 3.0.1
         info:
-          title: !Sub '${AWS::StackName}-pagamentos-api'
+          title: !Sub ${AWS::StackName}-pagamentos-api
           version: '1.0'
         paths: {}
       CorsConfiguration:
@@ -67,16 +71,16 @@ Resources:
         Authorizers:
           CognitoJwtAuthorizer:
             JwtConfiguration:
-              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${PagamentosUserPool}"
+              issuer: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${PagamentosUserPool}
               audience:
                 - !Ref PagamentosUserPoolClient
-            IdentitySource: "$request.header.Authorization"
+            IdentitySource: $request.header.Authorization
 
   # AWS DyanmoDB Table (Pagamento Table)
   PagamentosTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "${AWS::StackName}-pagamentos"
+      TableName: !Sub ${AWS::StackName}-pagamentos
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: id
@@ -89,12 +93,12 @@ Resources:
   PagamentosUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: !Sub "${AWS::StackName}-user-pool"
+      UserPoolName: !Sub ${AWS::StackName}-user-pool
       UsernameConfiguration:
         CaseSensitive: false
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
-      MfaConfiguration: "OFF"
+      MfaConfiguration: 'OFF'
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -103,7 +107,7 @@ Resources:
           RequireNumbers: true
           RequireSymbols: true
           TemporaryPasswordValidityDays: 7
-          
+
   # AWS Cognito App Client
   PagamentosUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
@@ -185,6 +189,9 @@ Resources:
             ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/status/{status}
             Method: GET
+      LoggingConfig:
+        LogGroup: !Ref PagamentosLambdaLogs
+        LogFormat: Text  
 
   # AWS Lambda (CreatePagamento Function)
   CreatePagamentoFunction:
@@ -205,6 +212,9 @@ Resources:
             ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos
             Method: POST
+      LoggingConfig:
+        LogGroup: !Ref PagamentosLambdaLogs
+        LogFormat: Text
 
   # AWS Lambda (PagarPagamento Function)
   PagarPagamentosFunction:
@@ -215,9 +225,12 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref PagamentosTable
+          BUCKET_NAME: !Ref PagamentosRegistoPdfBucket
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PagamentosTable
+        - S3WritePolicy:
+            BucketName: !Ref PagamentosRegistoPdfBucket
       Events:
         PagarPagamentos:
           Type: HttpApi
@@ -225,6 +238,9 @@ Resources:
             ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/pagar
             Method: POST
+      LoggingConfig:
+        LogGroup: !Ref PagamentosLambdaLogs
+        LogFormat: Text
 
   # AWS Lambda (DeletePagamento Function)
   DeletePagamentoFunction:
@@ -251,7 +267,10 @@ Resources:
             ApiId: !Ref PagamentosHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
-            
+      LoggingConfig:
+        LogGroup: !Ref PagamentosLambdaLogs
+        LogFormat: Text
+
   # AWS Lambda (Historico Function)
   HistoricoFunction:
     Type: AWS::Serverless::Function
@@ -262,7 +281,7 @@ Resources:
         Variables:
           TABLE_NAME: !Ref PagamentosTable
       Policies:
-        - DynamoDBCrudPolicy:
+        - DynamoDBReadPolicy:
             TableName: !Ref PagamentosTable
       Events:
         ListHistoricoByUser:
@@ -271,21 +290,56 @@ Resources:
             ApiId: !Ref PagamentosHttpApi
             Path: /historico
             Method: GET
+      LoggingConfig:
+        LogGroup: !Ref PagamentosLambdaLogs
+        LogFormat: Text            
 
-  # AWS CloudWatch - API Gateway Access Logs
+  # AWS Lambda (Download PDF Function)
+  DownloadPdfFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PagamentosFunction
+      Handler: pagamentos.handler.DownloadPdfHandler::handleRequest
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref PagamentosRegistoPdfBucket
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref PagamentosRegistoPdfBucket
+      Events:
+        DownloadPdf:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PagamentosHttpApi
+            Path: /pagamentos/comprovativo/pdf
+            Method: GET
+      LoggingConfig:
+        LogGroup: !Ref PagamentosLambdaLogs
+        LogFormat: Text
+
+  # AWS CloudWatch - API Gateway Access Logs Groups
   PagamentosApiAccessLogs:
     Type: AWS::Logs::LogGroup
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      LogGroupName: !Sub "/aws/apigateway/${AWS::StackName}-pagamentos-http-api-access"
-      RetentionInDays: 7
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-pagamentos-http-api-access
+      RetentionInDays: 30
+      
+  # AWS Cloudwatch - Lambdas Logs Groups    
+  PagamentosLambdaLogs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub "/pagamentos/${AWS::StackName}/lambda"
+      RetentionInDays: 30
 
   # AWS CloudWatch - Dashboard Config
   PagamentosCloudWatchDashboard:
     Type: AWS::CloudWatch::Dashboard
     Properties:
-      DashboardName: !Sub "${AWS::StackName}-dashboard"
+      DashboardName: !Sub ${AWS::StackName}-dashboard
       DashboardBody: !Sub |
         {
           "widgets": [
@@ -348,7 +402,8 @@ Resources:
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete" } ],
-                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ]
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ],
+                  [ ".", ".", ".", "${DownloadPdfFunction}", {"stat": "Sum", "label": "Download PDF" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -369,12 +424,15 @@ Resources:
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create errors" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar errors" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete errors" } ],
-                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ],
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico errors" } ],
+                  [ ".", ".", ".", "${DownloadPdfFunction}", {"stat": "Sum", "label": "Download PDF errors" } ]
                   [ ".", "Throttles", ".", "${ReadPagamentosFunction}", { "stat": "Sum", "label": "Read throttles" } ],
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Sum", "label": "Create throttles" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar throttles" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete throttles" } ],
-                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico" } ]
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico throttles" } ],
+                  [ ".", ".", ".", "${DownloadPdfFunction}",{"stat": "Sum", "label": "Download PDF throttles" } ],
+                  
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -395,7 +453,8 @@ Resources:
                   [ ".", ".", ".", "${CreatePagamentoFunction}", { "stat": "Average", "label": "Create avg" } ],
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Average", "label": "Pagar avg" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Average", "label": "Delete avg" } ],
-                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Average", "label": "Historico avg" } ]
+                  [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Average", "label": "Historico avg" } ],
+                  [ ".", ".", ".", "${DownloadPdfFunction}", {"stat": "Average", "label": "Download PDF avg" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -425,12 +484,12 @@ Resources:
             }
           ]
         }
-  
+
   # AWS SNS - Alarm Topic
   PagamentosAlarmTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Sub "${AWS::StackName}-alarms"
+      TopicName: !Sub ${AWS::StackName}-alarms
       Subscription:
         - Protocol: email
           Endpoint: !Ref AlarmNotificationEmail
@@ -439,7 +498,7 @@ Resources:
   ApiGateway5xxAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-api-gateway-5xx"
+      AlarmName: !Sub ${AWS::StackName}-api-gateway-5xx
       AlarmDescription: API Gateway returned 5XX errors
       Namespace: AWS/ApiGateway
       MetricName: 5xx
@@ -460,7 +519,7 @@ Resources:
   ApiGatewayHighLatencyAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-api-gateway-high-latency"
+      AlarmName: !Sub ${AWS::StackName}-api-gateway-high-latency
       AlarmDescription: API Gateway average latency is high
       Namespace: AWS/ApiGateway
       MetricName: Latency
@@ -477,85 +536,11 @@ Resources:
       AlarmActions:
         - !Ref PagamentosAlarmTopic
 
-  # Lambda Errors Alarm
-  LambdaErrorsAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: !Sub "${AWS::StackName}-lambda-errors"
-      AlarmDescription: One or more Lambda functions returned errors
-      Metrics:
-        - Id: readErrors
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Ref ReadPagamentosFunction
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: createErrors
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Ref CreatePagamentoFunction
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: pagarErrors
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Ref PagarPagamentosFunction
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: deleteErrors
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Ref DeletePagamentoFunction
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: historicoErrors
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: HistoricoFunction
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: totalErrors
-          Expression: readErrors + createErrors + pagarErrors + deleteErrors + historicoErrors
-          Label: Total Lambda errors
-          ReturnData: true
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: 0
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-      AlarmActions:
-        - !Ref PagamentosAlarmTopic
-
   # Lambda Functions Throttle Alarm
   LambdaThrottlesAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-lambda-throttles"
+      AlarmName: !Sub ${AWS::StackName}-lambda-throttles
       AlarmDescription: One or more Lambda functions were throttled
       Metrics:
         - Id: readThrottles
@@ -613,8 +598,19 @@ Resources:
             Period: 300
             Stat: Sum
           ReturnData: false
+        - Id: downloadPdfThrottles
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Throttles
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Ref DownloadPdfFunction
+            Period: 300
+            Stat: Sum
+          ReturnData: false
         - Id: totalThrottles
-          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles + historicoThrottles
+          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles + historicoThrottles + historicoThrottles 
           Label: Total Lambda throttles
           ReturnData: true
       EvaluationPeriods: 1
@@ -629,7 +625,7 @@ Resources:
   DynamoDbThrottledRequestsAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-dynamodb-throttled-requests"
+      AlarmName: !Sub ${AWS::StackName}-dynamodb-throttled-requests
       AlarmDescription: DynamoDB table has throttled requests
       Namespace: AWS/DynamoDB
       MetricName: ThrottledRequests
@@ -646,13 +642,22 @@ Resources:
       AlarmActions:
         - !Ref PagamentosAlarmTopic
 
+  # S3 PDF Bucket Resource
+  PagamentosRegistoPdfBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-pagamento-registo-pdf
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
-  
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL
-    Value: !Sub "https://${PagamentosHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos"
-    
+    Value: !Sub https://${PagamentosHttpApi}.execute-api.${AWS::Region}.amazonaws.com/pagamentos
+
   CognitoUserPoolId:
     Description: Cognito User Pool ID
     Value: !Ref PagamentosUserPool
@@ -663,12 +668,12 @@ Outputs:
 
   CognitoHostedUiDomain:
     Description: Cognito Hosted UI Domain
-    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
-  
+    Value: !Sub https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com
+
   CognitoRegion:
     Description: AWS Region for Cognito
     Value: !Ref AWS::Region
-  
+
   CloudWatchDashboardName:
     Description: CloudWatch Dashboard name
     Value: !Ref PagamentosCloudWatchDashboard

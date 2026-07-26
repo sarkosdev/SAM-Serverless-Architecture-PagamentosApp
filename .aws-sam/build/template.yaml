@@ -16,7 +16,7 @@ Parameters:
     Description: Angular application URL
   AlarmNotificationEmail:
     Type: String
-    Description: optic11051997@gmail.com
+    Description: Email address that receives CloudWatch alarm notifications
 Globals:
   Function:
     Runtime: java25
@@ -27,6 +27,9 @@ Globals:
     Environment:
       Variables:
         DYNAMODB_ENDPOINT: ''
+        S3_ENDPOINT: ''
+        APP_ENV: cloud
+        LOCAL_USERNAME: ''
 Resources:
   PagamentosHttpApi:
     Type: AWS::Serverless::HttpApi
@@ -185,6 +188,10 @@ Resources:
               Ref: PagamentosHttpApi
             Path: /pagamentos/status/{status}
             Method: GET
+      LoggingConfig:
+        LogGroup:
+          Ref: PagamentosLambdaLogs
+        LogFormat: Text
     Metadata:
       SamResourceId: ReadPagamentosFunction
   CreatePagamentoFunction:
@@ -208,6 +215,10 @@ Resources:
               Ref: PagamentosHttpApi
             Path: /pagamentos
             Method: POST
+      LoggingConfig:
+        LogGroup:
+          Ref: PagamentosLambdaLogs
+        LogFormat: Text
     Metadata:
       SamResourceId: CreatePagamentoFunction
   PagarPagamentosFunction:
@@ -219,10 +230,15 @@ Resources:
         Variables:
           TABLE_NAME:
             Ref: PagamentosTable
+          BUCKET_NAME:
+            Ref: PagamentosRegistoPdfBucket
       Policies:
       - DynamoDBCrudPolicy:
           TableName:
             Ref: PagamentosTable
+      - S3WritePolicy:
+          BucketName:
+            Ref: PagamentosRegistoPdfBucket
       Events:
         PagarPagamentos:
           Type: HttpApi
@@ -231,6 +247,10 @@ Resources:
               Ref: PagamentosHttpApi
             Path: /pagamentos/pagar
             Method: POST
+      LoggingConfig:
+        LogGroup:
+          Ref: PagamentosLambdaLogs
+        LogFormat: Text
     Metadata:
       SamResourceId: PagarPagamentosFunction
   DeletePagamentoFunction:
@@ -261,6 +281,10 @@ Resources:
               Ref: PagamentosHttpApi
             Path: /pagamentos/process/{processNum}
             Method: DELETE
+      LoggingConfig:
+        LogGroup:
+          Ref: PagamentosLambdaLogs
+        LogFormat: Text
     Metadata:
       SamResourceId: DeletePagamentoFunction
   HistoricoFunction:
@@ -273,7 +297,7 @@ Resources:
           TABLE_NAME:
             Ref: PagamentosTable
       Policies:
-      - DynamoDBCrudPolicy:
+      - DynamoDBReadPolicy:
           TableName:
             Ref: PagamentosTable
       Events:
@@ -284,8 +308,39 @@ Resources:
               Ref: PagamentosHttpApi
             Path: /historico
             Method: GET
+      LoggingConfig:
+        LogGroup:
+          Ref: PagamentosLambdaLogs
+        LogFormat: Text
     Metadata:
       SamResourceId: HistoricoFunction
+  DownloadPdfFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: DownloadPdfFunction
+      Handler: pagamentos.handler.DownloadPdfHandler::handleRequest
+      Environment:
+        Variables:
+          BUCKET_NAME:
+            Ref: PagamentosRegistoPdfBucket
+      Policies:
+      - S3ReadPolicy:
+          BucketName:
+            Ref: PagamentosRegistoPdfBucket
+      Events:
+        DownloadPdf:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: PagamentosHttpApi
+            Path: /pagamentos/comprovativo/pdf
+            Method: GET
+      LoggingConfig:
+        LogGroup:
+          Ref: PagamentosLambdaLogs
+        LogFormat: Text
+    Metadata:
+      SamResourceId: DownloadPdfFunction
   PagamentosApiAccessLogs:
     Type: AWS::Logs::LogGroup
     DeletionPolicy: Delete
@@ -293,7 +348,15 @@ Resources:
     Properties:
       LogGroupName:
         Fn::Sub: /aws/apigateway/${AWS::StackName}-pagamentos-http-api-access
-      RetentionInDays: 7
+      RetentionInDays: 30
+  PagamentosLambdaLogs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName:
+        Fn::Sub: /pagamentos/${AWS::StackName}/lambda
+      RetentionInDays: 30
   PagamentosCloudWatchDashboard:
     Type: AWS::CloudWatch::Dashboard
     Properties:
@@ -332,41 +395,48 @@ Resources:
           : \"Pagar\" } ],\n          [ \".\", \".\", \".\", \"${DeletePagamentoFunction}\"\
           , { \"stat\": \"Sum\", \"label\": \"Delete\" } ],\n          [ \".\", \"\
           .\", \".\", \"${HistoricoFunction}\",  {\"stat\": \"Sum\", \"label\": \"\
-          Historico\" } ]\n        ],\n        \"view\": \"timeSeries\",\n       \
-          \ \"stacked\": false,\n        \"region\": \"${AWS::Region}\",\n       \
-          \ \"title\": \"Lambda invocations\",\n        \"period\": 300\n      }\n\
-          \    },\n    {\n      \"type\": \"metric\",\n      \"x\": 12,\n      \"\
-          y\": 8,\n      \"width\": 12,\n      \"height\": 6,\n      \"properties\"\
-          : {\n        \"metrics\": [\n          [ \"AWS/Lambda\", \"Errors\", \"\
-          FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\", \"label\"\
-          : \"Read errors\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
-          , { \"stat\": \"Sum\", \"label\": \"Create errors\" } ],\n          [ \"\
-          .\", \".\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\",\
-          \ \"label\": \"Pagar errors\" } ],\n          [ \".\", \".\", \".\", \"\
-          ${DeletePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"Delete errors\"\
-          \ } ],\n          [ \".\", \".\", \".\", \"${HistoricoFunction}\",  {\"\
-          stat\": \"Sum\", \"label\": \"Historico\" } ],\n          [ \".\", \"Throttles\"\
-          , \".\", \"${ReadPagamentosFunction}\", { \"stat\": \"Sum\", \"label\":\
-          \ \"Read throttles\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
-          , { \"stat\": \"Sum\", \"label\": \"Create throttles\" } ],\n          [\
-          \ \".\", \".\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Sum\"\
-          , \"label\": \"Pagar throttles\" } ],\n          [ \".\", \".\", \".\",\
-          \ \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"Delete\
-          \ throttles\" } ],\n          [ \".\", \".\", \".\", \"${HistoricoFunction}\"\
-          ,  {\"stat\": \"Sum\", \"label\": \"Historico\" } ]\n        ],\n      \
-          \  \"view\": \"timeSeries\",\n        \"stacked\": false,\n        \"region\"\
-          : \"${AWS::Region}\",\n        \"title\": \"Lambda errors and throttles\"\
+          Historico\" } ],\n          [ \".\", \".\", \".\", \"${DownloadPdfFunction}\"\
+          , {\"stat\": \"Sum\", \"label\": \"Download PDF\" } ]\n        ],\n    \
+          \    \"view\": \"timeSeries\",\n        \"stacked\": false,\n        \"\
+          region\": \"${AWS::Region}\",\n        \"title\": \"Lambda invocations\"\
           ,\n        \"period\": 300\n      }\n    },\n    {\n      \"type\": \"metric\"\
-          ,\n      \"x\": 0,\n      \"y\": 14,\n      \"width\": 12,\n      \"height\"\
+          ,\n      \"x\": 12,\n      \"y\": 8,\n      \"width\": 12,\n      \"height\"\
           : 6,\n      \"properties\": {\n        \"metrics\": [\n          [ \"AWS/Lambda\"\
-          , \"Duration\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
-          : \"Average\", \"label\": \"Read avg\" } ],\n          [ \".\", \".\", \"\
-          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Average\", \"label\"\
-          : \"Create avg\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
-          , { \"stat\": \"Average\", \"label\": \"Pagar avg\" } ],\n          [ \"\
-          .\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Average\"\
-          , \"label\": \"Delete avg\" } ],\n          [ \".\", \".\", \".\", \"${HistoricoFunction}\"\
-          ,  {\"stat\": \"Average\", \"label\": \"Historico avg\" } ]\n        ],\n\
+          , \"Errors\", \"FunctionName\", \"${ReadPagamentosFunction}\", { \"stat\"\
+          : \"Sum\", \"label\": \"Read errors\" } ],\n          [ \".\", \".\", \"\
+          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"\
+          Create errors\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Pagar errors\" } ],\n          [ \"\
+          .\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\",\
+          \ \"label\": \"Delete errors\" } ],\n          [ \".\", \".\", \".\", \"\
+          ${HistoricoFunction}\",  {\"stat\": \"Sum\", \"label\": \"Historico errors\"\
+          \ } ],\n          [ \".\", \".\", \".\", \"${DownloadPdfFunction}\", {\"\
+          stat\": \"Sum\", \"label\": \"Download PDF errors\" } ]\n          [ \"\
+          .\", \"Throttles\", \".\", \"${ReadPagamentosFunction}\", { \"stat\": \"\
+          Sum\", \"label\": \"Read throttles\" } ],\n          [ \".\", \".\", \"\
+          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"\
+          Create throttles\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
+          , { \"stat\": \"Sum\", \"label\": \"Pagar throttles\" } ],\n          [\
+          \ \".\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\"\
+          , \"label\": \"Delete throttles\" } ],\n          [ \".\", \".\", \".\"\
+          , \"${HistoricoFunction}\",  {\"stat\": \"Sum\", \"label\": \"Historico\
+          \ throttles\" } ],\n          [ \".\", \".\", \".\", \"${DownloadPdfFunction}\"\
+          ,{\"stat\": \"Sum\", \"label\": \"Download PDF throttles\" } ],\n      \
+          \    \n        ],\n        \"view\": \"timeSeries\",\n        \"stacked\"\
+          : false,\n        \"region\": \"${AWS::Region}\",\n        \"title\": \"\
+          Lambda errors and throttles\",\n        \"period\": 300\n      }\n    },\n\
+          \    {\n      \"type\": \"metric\",\n      \"x\": 0,\n      \"y\": 14,\n\
+          \      \"width\": 12,\n      \"height\": 6,\n      \"properties\": {\n \
+          \       \"metrics\": [\n          [ \"AWS/Lambda\", \"Duration\", \"FunctionName\"\
+          , \"${ReadPagamentosFunction}\", { \"stat\": \"Average\", \"label\": \"\
+          Read avg\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
+          , { \"stat\": \"Average\", \"label\": \"Create avg\" } ],\n          [ \"\
+          .\", \".\", \".\", \"${PagarPagamentosFunction}\", { \"stat\": \"Average\"\
+          , \"label\": \"Pagar avg\" } ],\n          [ \".\", \".\", \".\", \"${DeletePagamentoFunction}\"\
+          , { \"stat\": \"Average\", \"label\": \"Delete avg\" } ],\n          [ \"\
+          .\", \".\", \".\", \"${HistoricoFunction}\",  {\"stat\": \"Average\", \"\
+          label\": \"Historico avg\" } ],\n          [ \".\", \".\", \".\", \"${DownloadPdfFunction}\"\
+          , {\"stat\": \"Average\", \"label\": \"Download PDF avg\" } ]\n        ],\n\
           \        \"view\": \"timeSeries\",\n        \"stacked\": false,\n      \
           \  \"region\": \"${AWS::Region}\",\n        \"title\": \"Lambda average\
           \ duration\",\n        \"period\": 300\n      }\n    },\n    {\n      \"\
@@ -428,83 +498,6 @@ Resources:
       EvaluationPeriods: 2
       DatapointsToAlarm: 2
       Threshold: 3000
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-      AlarmActions:
-      - Ref: PagamentosAlarmTopic
-  LambdaErrorsAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName:
-        Fn::Sub: ${AWS::StackName}-lambda-errors
-      AlarmDescription: One or more Lambda functions returned errors
-      Metrics:
-      - Id: readErrors
-        MetricStat:
-          Metric:
-            Namespace: AWS/Lambda
-            MetricName: Errors
-            Dimensions:
-            - Name: FunctionName
-              Value:
-                Ref: ReadPagamentosFunction
-          Period: 300
-          Stat: Sum
-        ReturnData: false
-      - Id: createErrors
-        MetricStat:
-          Metric:
-            Namespace: AWS/Lambda
-            MetricName: Errors
-            Dimensions:
-            - Name: FunctionName
-              Value:
-                Ref: CreatePagamentoFunction
-          Period: 300
-          Stat: Sum
-        ReturnData: false
-      - Id: pagarErrors
-        MetricStat:
-          Metric:
-            Namespace: AWS/Lambda
-            MetricName: Errors
-            Dimensions:
-            - Name: FunctionName
-              Value:
-                Ref: PagarPagamentosFunction
-          Period: 300
-          Stat: Sum
-        ReturnData: false
-      - Id: deleteErrors
-        MetricStat:
-          Metric:
-            Namespace: AWS/Lambda
-            MetricName: Errors
-            Dimensions:
-            - Name: FunctionName
-              Value:
-                Ref: DeletePagamentoFunction
-          Period: 300
-          Stat: Sum
-        ReturnData: false
-      - Id: historicoErrors
-        MetricStat:
-          Metric:
-            Namespace: AWS/Lambda
-            MetricName: Errors
-            Dimensions:
-            - Name: FunctionName
-              Value: HistoricoFunction
-          Period: 300
-          Stat: Sum
-        ReturnData: false
-      - Id: totalErrors
-        Expression: readErrors + createErrors + pagarErrors + deleteErrors + historicoErrors
-        Label: Total Lambda errors
-        ReturnData: true
-      EvaluationPeriods: 1
-      DatapointsToAlarm: 1
-      Threshold: 0
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
       AlarmActions:
@@ -576,9 +569,21 @@ Resources:
           Period: 300
           Stat: Sum
         ReturnData: false
+      - Id: downloadPdfThrottles
+        MetricStat:
+          Metric:
+            Namespace: AWS/Lambda
+            MetricName: Throttles
+            Dimensions:
+            - Name: FunctionName
+              Value:
+                Ref: DownloadPdfFunction
+          Period: 300
+          Stat: Sum
+        ReturnData: false
       - Id: totalThrottles
         Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles
-          + historicoThrottles
+          + historicoThrottles + historicoThrottles
         Label: Total Lambda throttles
         ReturnData: true
       EvaluationPeriods: 1
@@ -609,6 +614,16 @@ Resources:
       TreatMissingData: notBreaching
       AlarmActions:
       - Ref: PagamentosAlarmTopic
+  PagamentosRegistoPdfBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: ${AWS::StackName}-pagamento-registo-pdf
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 Outputs:
   PagamentosApiUrl:
     Description: API Gateway endpoint URL

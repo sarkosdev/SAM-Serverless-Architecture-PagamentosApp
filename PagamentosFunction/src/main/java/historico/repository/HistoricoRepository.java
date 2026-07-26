@@ -8,6 +8,10 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 
+/**
+ * 
+ * HistoricoRepository Class - Data Layer
+ */
 public class HistoricoRepository {
 
     final String TYPE = "PAGAMENTO";
@@ -20,8 +24,6 @@ public class HistoricoRepository {
         this.tableName = tableName;
     }
 
-
-
     // Find all 'Historico' from Table according to userName
     public List<Map<String, AttributeValue>> findAllHistoricoByUser(String userName) {
 
@@ -33,16 +35,13 @@ public class HistoricoRepository {
                     "#type", "type"
                 ))
                 .expressionAttributeValues(Map.of(
-                    "userName", AttributeValue.builder().s(userName).build(),
-                    "type", AttributeValue.builder().s(TYPE).build()
+                    ":userName", AttributeValue.builder().s(userName).build(),
+                    ":type", AttributeValue.builder().s(TYPE).build()
                 ))
                 .build());
 
         return response.items();
     }
-
-
-
 
     
 }

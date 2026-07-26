@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
+import pagamentos.auth.AuthenticatedUserResolver;
 import pagamentos.config.DynamoDbConfig;
 import pagamentos.logging.DataLogger;
 import pagamentos.repository.PagamentoRepository;
@@ -34,20 +35,14 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
             String method = request.getRequestContext().getHttp().getMethod();
             String path = request.getRawPath();
 
-            //testng 
-            String userName = "";
-            var authorizer = request.getRequestContext().getAuthorizer();
-            if(authorizer != null && authorizer.getJwt() != null) {
-                Map<String, String> claims = authorizer.getJwt().getClaims();
-                userName = claims.get("username");
-            }
-            //testng
+            String userName = AuthenticatedUserResolver.resolve(request);
 
             if (!"DELETE".equalsIgnoreCase(method)) {
                 return ApiResponse.json(405, Map.of("error", "Method not allowed"));
             }
 
             if (path.startsWith("/pagamentos/process/")) {
+
                 String processNum = path.substring("/pagamentos/process/".length());
                 boolean deleted = service.deletePagamentoByProcessNum(processNum, userName);
 
@@ -92,7 +87,7 @@ public class DeletePagamentoHandler implements RequestHandler<APIGatewayV2HTTPEv
 
             if (path.startsWith("/pagamentos/")) {
                 String id = path.substring("/pagamentos/".length());
-                boolean deleted = service.deleteProcessoById(id);
+                boolean deleted = service.deleteProcessoById(id, userName);
 
                 if (!deleted) {
                     APIGatewayV2HTTPResponse response = ApiResponse.json(404, Map.of(

@@ -5,12 +5,17 @@ import java.util.Map;
 
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.CancellationReason;
 import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.GetItemResponse;
+import software.amazon.awssdk.services.dynamodb.model.Put;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsRequest;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
@@ -23,12 +28,15 @@ public class PagamentoRepository {
     private final DynamoDbClient dynamoDb;
     private final String tableName;
 
+     private static final String TYPE_UNIQUE_PROCESSO = "UNIQUE_PROCESSO";
+
     public PagamentoRepository(DynamoDbClient dynamoDb, String tableName) {
         this.dynamoDb = dynamoDb;
         this.tableName = tableName;
     }
 
 
+    // POSSIVELMENTE DEPRECATED - PROBLEMAS DE CONCORRENCIA COM OPERACOES EM SIMULTANEO
     // Save 'Pagamento' in to DynamoDB 'Pagamentos' Tabel
     public void save(Map<String, AttributeValue> item) {
         dynamoDb.putItem(PutItemRequest.builder()
@@ -36,6 +44,53 @@ public class PagamentoRepository {
                 .item(item)
                 .build());
     }
+
+
+    public boolean saveProcessIfUnique(
+            Map<String, AttributeValue> processItem,
+            String uniqueKey) {
+
+        Map<String, AttributeValue> uniqueItem =
+                Map.of(
+                    "id", AttributeValue.fromS(uniqueKey),
+                    "type", AttributeValue.fromS(TYPE_UNIQUE_PROCESSO),
+                    "processId", processItem.get("id")
+                );
+
+        Put uniqueItemPut = Put.builder().tableName(tableName).item(uniqueItem)
+                .conditionExpression("attribute_not_exists(#id)")
+                .expressionAttributeNames(Map.of("#id", "id"))
+                .build();
+
+        Put processItemPut = Put.builder().tableName(tableName).item(processItem)
+                .conditionExpression("attribute_not_exists(#id)")
+                .expressionAttributeNames(Map.of("#id", "id"))
+                .build();
+
+        TransactWriteItemsRequest transaction = TransactWriteItemsRequest.builder()
+                        .clientRequestToken(processItem.get("id").s())
+                        .transactItems(
+                            List.of(
+                                TransactWriteItem.builder().put(uniqueItemPut).build(),
+                                TransactWriteItem.builder().put(processItemPut).build()
+                            )
+                        )
+                        .build();
+
+        try {
+            dynamoDb.transactWriteItems(transaction);
+
+            return true;
+
+        } catch (TransactionCanceledException e) {
+            if (isDuplicateProcess(e)) {
+                return false;
+            }
+
+            throw e;
+        }
+    }
+
 
     // Find all 'Pagamento' in DynamoDB 'Pagamentos' Tabel
     public List<Map<String, AttributeValue>> findAllProcesso(String userName) {
@@ -143,4 +198,13 @@ public class PagamentoRepository {
                 .key(Map.of("id", AttributeValue.fromS(id)))
                 .build());
     }
+
+
+    // Check if process already exists in DynamoDB Table
+    private boolean isDuplicateProcess(TransactionCanceledException exception) {
+        List<CancellationReason> reasons = exception.cancellationReasons();
+
+        return reasons != null && !reasons.isEmpty() && "ConditionalCheckFailed".equals(reasons.get(0).code());
+    }
+
 }

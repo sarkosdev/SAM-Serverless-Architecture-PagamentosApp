@@ -1,5 +1,7 @@
 package historico.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
  * 
- * HistoricoService Class
+ * HistoricoService Class - Service Layer
  */
 public class HistoricoService {
     
@@ -19,10 +21,9 @@ public class HistoricoService {
         this.repository = repository;
     }
 
-
     // List 'Historico' by userName
     public List<Map<String, Object>> listHistoricoByUser(String userName) {
-        if(userName.isEmpty()) throw new IllegalArgumentException("userName is required");
+        if(userName.isEmpty() || userName == null) throw new IllegalArgumentException("userName is required");
     
         return repository.findAllHistoricoByUser(userName)
                 .stream()
@@ -30,24 +31,32 @@ public class HistoricoService {
                 .toList();
     }
 
-
-
-
-
-
-
-
-
-
+    // Convert to response
     private Map<String, Object> toResponseHistorico(Map<String, AttributeValue> item) {
-        return Map.of(
-                "id", item.get("id").s(),
-                "createdAt", item.get("createdAt").s(),
-                "processosPagos", item.get("processosPagos").s(),
-                "status", item.get("status").s(),
-                "type", item.get("type").s(),
-                "userName", item.get("userName").s(),
-                "valorTotal", item.get("valorTotal")  
-        );
+        List<Map<String, String>> processosPagos = new ArrayList<>();
+
+        AttributeValue processosPagosAttr = item.get("processosPagos");
+
+        if (processosPagosAttr != null && processosPagosAttr.l() != null) {
+            for (AttributeValue processo : processosPagosAttr.l()) {
+                Map<String, AttributeValue> processoMap = processo.m();
+
+                processosPagos.add(Map.of(
+                        "processNum", processoMap.get("processNum").s(),
+                        "processValue", processoMap.get("processValue").n()
+                ));
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", item.get("id").s());
+        response.put("createdAt", item.get("createdAt").s());
+        response.put("processosPagos", processosPagos);
+        response.put("status", "PAGO");
+        response.put("userName", item.get("userName").s());
+        response.put("valorTotal", item.get("valorTotal").n());
+        response.put("pdfKey", item.containsKey("pdfKey") ? item.get("pdfKey").s() : null);
+
+        return response;
     }
 }

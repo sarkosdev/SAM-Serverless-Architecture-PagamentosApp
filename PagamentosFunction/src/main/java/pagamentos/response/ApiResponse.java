@@ -22,13 +22,7 @@ public class ApiResponse {
                     .withBody(objectMapper.writeValueAsString(body))
                     .build();
         } catch (Exception e) {
-            return APIGatewayV2HTTPResponse.builder()
-                    .withStatusCode(500)
-                    .withHeaders(Map.of(
-                            "Content-Type", "application/json"
-                    ))
-                    .withBody("{\"error\":\"Failed to serialize response\"}")
-                    .build();
+            throw new RuntimeException("Failed to serialize response body", e);
         }
     }
 }

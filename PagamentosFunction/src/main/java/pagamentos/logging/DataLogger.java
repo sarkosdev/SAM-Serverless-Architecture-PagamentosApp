@@ -8,28 +8,20 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * DataLogger Class used for CloudWatch logs
+ */
 public class DataLogger {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static void info(
-            Context context,
-            APIGatewayV2HTTPEvent request,
-            String operation,
-            String message,
-            Map<String, Object> extraFields
-    ) {
+    // Info DataLogger - Cloudwatch
+    public static void info(Context context, APIGatewayV2HTTPEvent request, String operation, String message, Map<String, Object> extraFields) {
         log("INFO", context, request, operation, message, extraFields);
     }
 
-    public static void error(
-            Context context,
-            APIGatewayV2HTTPEvent request,
-            String operation,
-            String message,
-            Exception exception,
-            Map<String, Object> extraFields
-    ) {
+    // Error DataLogger - Cloudwatch
+    public static void error(Context context, APIGatewayV2HTTPEvent request, String operation, String message, Exception exception, Map<String, Object> extraFields) {
         Map<String, Object> fields = new HashMap<>();
 
         if (extraFields != null) {
@@ -44,14 +36,12 @@ public class DataLogger {
         log("ERROR", context, request, operation, message, fields);
     }
 
-    private static void log(
-            String level,
-            Context context,
-            APIGatewayV2HTTPEvent request,
-            String operation,
-            String message,
-            Map<String, Object> extraFields
-    ) {
+    // Warning DataLogger - Cloudwatch
+    public static void warn(Context context, APIGatewayV2HTTPEvent request, String operation, String message, Map<String, Object> extraFields) {
+        log("WARN", context, request, operation, message, extraFields);
+    }
+
+    private static void log(String level,Context context,APIGatewayV2HTTPEvent request,String operation,String message,Map<String, Object> extraFields) {
         try {
             Map<String, Object> log = new HashMap<>();
 

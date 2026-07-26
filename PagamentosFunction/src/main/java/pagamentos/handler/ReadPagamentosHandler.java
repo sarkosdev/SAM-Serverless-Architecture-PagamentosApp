@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
+import pagamentos.auth.AuthenticatedUserResolver;
 import pagamentos.config.DynamoDbConfig;
 import pagamentos.logging.DataLogger;
 import pagamentos.repository.PagamentoRepository;
@@ -14,6 +15,9 @@ import pagamentos.response.ApiResponse;
 import pagamentos.service.PagamentoService;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+/**
+ * ReadPagamentosHandler Lambda Function - Controller Layer
+ */
 public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
 
     private final PagamentoService service;
@@ -35,6 +39,7 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
             String method = request.getRequestContext().getHttp().getMethod();
             String path = request.getRawPath();
 
+            /*
             //testing
             String userName = "";
             var authorizer = request.getRequestContext().getAuthorizer();
@@ -43,6 +48,8 @@ public class ReadPagamentosHandler implements RequestHandler<APIGatewayV2HTTPEve
                 userName = claims.get("username");
             }
             //testing
+            */
+            String userName = AuthenticatedUserResolver.resolve(request);
 
             if (!"GET".equalsIgnoreCase(method)) {
                 return ApiResponse.json(405, Map.of("error", "Method not allowed"));
