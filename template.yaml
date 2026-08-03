@@ -26,6 +26,7 @@ Globals:
     MemorySize: 1024
     Architectures:
       - arm64
+    Tracing: Active
     Environment:
       Variables:
         DYNAMODB_ENDPOINT: ''
