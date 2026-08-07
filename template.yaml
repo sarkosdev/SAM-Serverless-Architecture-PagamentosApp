@@ -237,7 +237,7 @@ Resources:
       CodeUri: PagamentosFunction
       Handler: pagamentos.handler.PagarPagamentoHandler::handleRequest
       Layers: 
-        - !Ref PdfBoxLayer
+        - !Ref PdfLayer
       Environment:
         Variables:
           TABLE_NAME: !Ref PagamentosTable
