@@ -34,6 +34,7 @@ phases:
     commands:
       - echo "Running clean SAM build..."
       - rm -rf .aws-sam
+      - mvn -f .\PdfBoxLayer\pom.xml clean package
       - sam build
       - echo "Checking CORS in built SAM template:"
       - grep -n "Cognito\|UserPool\|PagamentosHttpApi\|CorsConfiguration\|AllowedOrigin" .aws-sam/build/template.yaml || true
