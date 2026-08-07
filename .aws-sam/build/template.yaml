@@ -23,7 +23,8 @@ Globals:
     Timeout: 10
     MemorySize: 1024
     Architectures:
-    - x86_64
+    - arm64
+    Tracing: Active
     Environment:
       Variables:
         DYNAMODB_ENDPOINT: ''
@@ -153,6 +154,18 @@ Resources:
       ClientId:
         Ref: PagamentosUserPoolClient
       UseCognitoProvidedValues: true
+  PdfBoxLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName:
+        Fn::Sub: ${AWS::StackName}-pdfbox
+      Description: PDFBox dependencies used to generate payment PDFs
+      ContentUri: ..\..\PdfBoxLayer\target\layer
+      CompatibleRuntimes:
+      - java25
+      CompatibleArchitectures:
+      - arm64
+      RetentionPolicy: Delete
   ReadPagamentosFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -226,6 +239,8 @@ Resources:
     Properties:
       CodeUri: PagarPagamentosFunction
       Handler: pagamentos.handler.PagarPagamentoHandler::handleRequest
+      Layers:
+      - Ref: PdfBoxLayer
       Environment:
         Variables:
           TABLE_NAME:
@@ -411,23 +426,23 @@ Resources:
           \ \"label\": \"Delete errors\" } ],\n          [ \".\", \".\", \".\", \"\
           ${HistoricoFunction}\",  {\"stat\": \"Sum\", \"label\": \"Historico errors\"\
           \ } ],\n          [ \".\", \".\", \".\", \"${DownloadPdfFunction}\", {\"\
-          stat\": \"Sum\", \"label\": \"Download PDF errors\" } ]\n          [ \"\
-          .\", \"Throttles\", \".\", \"${ReadPagamentosFunction}\", { \"stat\": \"\
-          Sum\", \"label\": \"Read throttles\" } ],\n          [ \".\", \".\", \"\
-          .\", \"${CreatePagamentoFunction}\", { \"stat\": \"Sum\", \"label\": \"\
-          Create throttles\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
+          stat\": \"Sum\", \"label\": \"Download PDF errors\" } ],\n\n          [\
+          \ \".\", \"Throttles\", \".\", \"${ReadPagamentosFunction}\", { \"stat\"\
+          : \"Sum\", \"label\": \"Read throttles\" } ],\n          [ \".\", \".\"\
+          , \".\", \"${CreatePagamentoFunction}\", { \"stat\": \"Sum\", \"label\"\
+          : \"Create throttles\" } ],\n          [ \".\", \".\", \".\", \"${PagarPagamentosFunction}\"\
           , { \"stat\": \"Sum\", \"label\": \"Pagar throttles\" } ],\n          [\
           \ \".\", \".\", \".\", \"${DeletePagamentoFunction}\", { \"stat\": \"Sum\"\
           , \"label\": \"Delete throttles\" } ],\n          [ \".\", \".\", \".\"\
           , \"${HistoricoFunction}\",  {\"stat\": \"Sum\", \"label\": \"Historico\
           \ throttles\" } ],\n          [ \".\", \".\", \".\", \"${DownloadPdfFunction}\"\
-          ,{\"stat\": \"Sum\", \"label\": \"Download PDF throttles\" } ],\n      \
-          \    \n        ],\n        \"view\": \"timeSeries\",\n        \"stacked\"\
-          : false,\n        \"region\": \"${AWS::Region}\",\n        \"title\": \"\
-          Lambda errors and throttles\",\n        \"period\": 300\n      }\n    },\n\
-          \    {\n      \"type\": \"metric\",\n      \"x\": 0,\n      \"y\": 14,\n\
-          \      \"width\": 12,\n      \"height\": 6,\n      \"properties\": {\n \
-          \       \"metrics\": [\n          [ \"AWS/Lambda\", \"Duration\", \"FunctionName\"\
+          ,{\"stat\": \"Sum\", \"label\": \"Download PDF throttles\" } ]\n       \
+          \ ],\n        \"view\": \"timeSeries\",\n        \"stacked\": false,\n \
+          \       \"region\": \"${AWS::Region}\",\n        \"title\": \"Lambda errors\
+          \ and throttles\",\n        \"period\": 300\n      }\n    },\n    {\n  \
+          \    \"type\": \"metric\",\n      \"x\": 0,\n      \"y\": 14,\n      \"\
+          width\": 12,\n      \"height\": 6,\n      \"properties\": {\n        \"\
+          metrics\": [\n          [ \"AWS/Lambda\", \"Duration\", \"FunctionName\"\
           , \"${ReadPagamentosFunction}\", { \"stat\": \"Average\", \"label\": \"\
           Read avg\" } ],\n          [ \".\", \".\", \".\", \"${CreatePagamentoFunction}\"\
           , { \"stat\": \"Average\", \"label\": \"Create avg\" } ],\n          [ \"\

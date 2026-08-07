@@ -27,10 +27,6 @@ public final class S3Config {
             builder.endpointOverride(URI.create(endpoint)).forcePathStyle(true);
         }
 
-        if (endpoint != null && !endpoint.isBlank()) {
-            builder.endpointOverride(URI.create(endpoint)).forcePathStyle(true);
-        }
-
         return builder.build();
     }
 

@@ -159,6 +159,19 @@ Resources:
       ClientId: !Ref PagamentosUserPoolClient
       UseCognitoProvidedValues: true
 
+  PdfBoxLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub ${AWS::StackName}-pdfbox
+      Description: PDFBox dependencies used to generate payment PDFs
+      ContentUri: PdfBoxLayer/target/layer
+      CompatibleRuntimes:
+        - java25
+      CompatibleArchitectures:
+        - arm64
+      RetentionPolicy: Delete
+
+
   # AWS Lambda (ReadPagamento Function)
   ReadPagamentosFunction:
     Type: AWS::Serverless::Function
@@ -192,7 +205,7 @@ Resources:
             Method: GET
       LoggingConfig:
         LogGroup: !Ref PagamentosLambdaLogs
-        LogFormat: Text  
+        LogFormat: Text
 
   # AWS Lambda (CreatePagamento Function)
   CreatePagamentoFunction:
@@ -223,6 +236,8 @@ Resources:
     Properties:
       CodeUri: PagamentosFunction
       Handler: pagamentos.handler.PagarPagamentoHandler::handleRequest
+      Layers: 
+        - !Ref PdfBoxLayer
       Environment:
         Variables:
           TABLE_NAME: !Ref PagamentosTable
@@ -293,7 +308,7 @@ Resources:
             Method: GET
       LoggingConfig:
         LogGroup: !Ref PagamentosLambdaLogs
-        LogFormat: Text            
+        LogFormat: Text
 
   # AWS Lambda (Download PDF Function)
   DownloadPdfFunction:
@@ -326,14 +341,14 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-pagamentos-http-api-access
       RetentionInDays: 30
-      
+
   # AWS Cloudwatch - Lambdas Logs Groups    
   PagamentosLambdaLogs:
     Type: AWS::Logs::LogGroup
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      LogGroupName: !Sub "/pagamentos/${AWS::StackName}/lambda"
+      LogGroupName: !Sub /pagamentos/${AWS::StackName}/lambda
       RetentionInDays: 30
 
   # AWS CloudWatch - Dashboard Config
@@ -433,7 +448,7 @@ Resources:
                   [ ".", ".", ".", "${PagarPagamentosFunction}", { "stat": "Sum", "label": "Pagar throttles" } ],
                   [ ".", ".", ".", "${DeletePagamentoFunction}", { "stat": "Sum", "label": "Delete throttles" } ],
                   [ ".", ".", ".", "${HistoricoFunction}",  {"stat": "Sum", "label": "Historico throttles" } ],
-                  [ ".", ".", ".", "${DownloadPdfFunction}",{"stat": "Sum", "label": "Download PDF throttles" } ]    
+                  [ ".", ".", ".", "${DownloadPdfFunction}",{"stat": "Sum", "label": "Download PDF throttles" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -611,7 +626,8 @@ Resources:
             Stat: Sum
           ReturnData: false
         - Id: totalThrottles
-          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles + historicoThrottles + historicoThrottles 
+          Expression: readThrottles + createThrottles + pagarThrottles + deleteThrottles +
+            historicoThrottles + historicoThrottles
           Label: Total Lambda throttles
           ReturnData: true
       EvaluationPeriods: 1
