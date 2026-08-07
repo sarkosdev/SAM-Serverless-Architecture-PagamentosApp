@@ -164,7 +164,7 @@ Resources:
     Properties:
       LayerName: !Sub ${AWS::StackName}-pdfbox
       Description: PDFBox dependencies used to generate payment PDFs
-      ContentUri: PdfBoxLayer/target/layer
+      ContentUri: PdfLayer/target/layer
       CompatibleRuntimes:
         - java25
       CompatibleArchitectures:
@@ -237,7 +237,7 @@ Resources:
       CodeUri: PagamentosFunction
       Handler: pagamentos.handler.PagarPagamentoHandler::handleRequest
       Layers: 
-        - !Ref PdfLayer
+        - !Ref PdfBoxLayer
       Environment:
         Variables:
           TABLE_NAME: !Ref PagamentosTable
