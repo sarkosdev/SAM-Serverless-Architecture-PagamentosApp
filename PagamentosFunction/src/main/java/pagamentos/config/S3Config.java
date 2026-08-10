@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 /**
  * 
- * S3Config Class
+ * S3Config Clas
  */
 public final class S3Config {
 
