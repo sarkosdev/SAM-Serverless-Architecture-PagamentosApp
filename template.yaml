@@ -18,6 +18,10 @@ Parameters:
   AlarmNotificationEmail:
     Type: String
     Description: Email address that receives CloudWatch alarm notifications
+  LayerArtifactBucket:
+    Type: String
+  PdfBoxLayerS3Key:
+    Type: String
 
 Globals:
   Function:
@@ -160,16 +164,17 @@ Resources:
       UseCognitoProvidedValues: true
 
   PdfBoxLayer:
-    Type: AWS::Serverless::LayerVersion
+    Type: AWS::Lambda::LayerVersion
     Properties:
       LayerName: !Sub ${AWS::StackName}-pdfbox
       Description: PDFBox dependencies used to generate payment PDFs
-      ContentUri: PdfLayer/target/layer
       CompatibleRuntimes:
         - java25
       CompatibleArchitectures:
         - arm64
-      RetentionPolicy: Delete
+      Content:
+        S3Bucket: !Ref LayerArtifactBucket
+        S3Key: !Ref PdfBoxLayerS3Key
 
 
   # AWS Lambda (ReadPagamento Function)

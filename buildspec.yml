@@ -24,26 +24,82 @@ phases:
     commands:
       - echo "Current directory:"
       - pwd
+
       - echo "Source files:"
       - ls -la
+
+      - echo "Validating SAM template:"
+      - sam validate --template-file template.yaml --region $AWS_REGION
+
+      - echo "Calculating PDFBox layer hash..."
+      - |
+        LAYER_HASH=$(sha256sum PdfLayer/pom.xml | cut -d ' ' -f1)
+
+        echo "PDFBox layer hash: $LAYER_HASH"
+
+        echo "LAYER_HASH=$LAYER_HASH" >> /tmp/layer.env
+        echo "LAYER_KEY=layers/pdfbox/${LAYER_HASH}.zip" >> /tmp/layer.env
+
       - echo "Checking CORS in source template.yaml:"
       - grep -n "Cognito\|UserPool\|PagamentosHttpApi\|CorsConfiguration\|AllowedOrigin" template.yaml || true
       - sam validate --template-file template.yaml --region $AWS_REGION
 
   build:
     commands:
+      - source /tmp/layer.env
+
+      - echo "PDFBox layer key: $LAYER_KEY"
+
+      - echo "Checking whether PDFBox layer already exists..."
+
+      - |
+        if aws s3api head-object \
+          --bucket "$SAM_ARTIFACT_BUCKET" \
+          --key "$LAYER_KEY" >/dev/null 2>&1
+        then
+          echo "=========================================="
+          echo "PDFBox layer already exists"
+          echo "SKIPPING Maven build"
+          echo "=========================================="
+        else
+          echo "=========================================="
+          echo "PDFBox layer does not exist"
+          echo "BUILDING layer"
+          echo "=========================================="
+
+          mvn -f PdfLayer/pom.xml clean package
+
+          echo "Creating layer ZIP..."
+
+          cd PdfLayer/target/layer
+
+          zip -r ../../../pdfbox-layer.zip .
+
+          cd ../../..
+
+          echo "Uploading PDFBox layer..."
+
+          aws s3 cp \
+            pdfbox-layer.zip \
+            "s3://${SAM_ARTIFACT_BUCKET}/${LAYER_KEY}"
+
+          rm -f pdfbox-layer.zip
+
+          echo "PDFBox layer uploaded successfully."
+        fi
+
       - echo "Running clean SAM build..."
       - rm -rf .aws-sam
-      - mvn -f PdfLayer/pom.xml clean package
       - sam build
       - echo "Checking CORS in built SAM template:"
       - grep -n "Cognito\|UserPool\|PagamentosHttpApi\|CorsConfiguration\|AllowedOrigin" .aws-sam/build/template.yaml || true
       - echo "Deploying SAM stack..."
-      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN FrontendUrl=$FRONTEND_URL CognitoDomainPrefix=$COGNITO_DOMAIN_PREFIX AlarmNotificationEmail=$ALARM_NOTIFICATION_EMAIL
+      - sam deploy --template-file .aws-sam/build/template.yaml --stack-name $STACK_NAME --s3-bucket $SAM_ARTIFACT_BUCKET --s3-prefix $SAM_S3_PREFIX --region $AWS_REGION --capabilities CAPABILITY_IAM CAPABILITY_AUTO_EXPAND --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides AllowedOrigin=$ALLOWED_ORIGIN FrontendUrl=$FRONTEND_URL CognitoDomainPrefix=$COGNITO_DOMAIN_PREFIX AlarmNotificationEmail=$ALARM_NOTIFICATION_EMAIL LayerArtifactBucket="$SAM_ARTIFACT_BUCKET" PdfBoxLayerS3Key="$LAYER_KEY"
 
   post_build:
     commands:
       - echo "CloudFormation stack status:"
       - aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --query "Stacks[0].StackStatus"
+      
       - echo "CloudFormation outputs:"
       - aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --query "Stacks[0].Outputs"
