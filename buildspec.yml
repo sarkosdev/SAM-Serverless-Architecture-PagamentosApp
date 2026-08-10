@@ -47,8 +47,8 @@ phases:
   build:
     commands:
       - source /tmp/layer.env
-
-      - echo "PDFBox layer key: $LAYER_KEY"
+      
+      - echo "PDFBox layer key :: $LAYER_KEY""
 
       - echo "Checking whether PDFBox layer already exists..."
 
